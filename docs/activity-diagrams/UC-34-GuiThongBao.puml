@@ -1,0 +1,43 @@
+@startuml UC34_GuiThongBao
+' ============================================================
+' UC-34: Gửi thông báo
+' Main Success: Admin tạo thông báo → gửi nội bộ + email
+' Secondary Actor: Email Service
+' Critical: Email Service lỗi (vẫn gửi nội bộ thành công)
+' ============================================================
+
+|Admin|
+|Hệ thống|
+|Email Service|
+
+start
+
+:Nhập tiêu đề, nội dung, chọn đối tượng nhận;
+:Gửi form;
+
+|Hệ thống|
+:Tạo bản ghi thông báo;
+
+fork
+  :Gửi thông báo nội bộ đến người nhận;
+fork again
+  :Gửi email qua Email Service;
+  |Email Service|
+  :Xử lý gửi email;
+  if (Lỗi?) then (Có)
+    |Hệ thống|
+    :Ghi log lỗi;
+  endif
+end fork
+
+:Ghi Audit Log;
+:Thông báo "Gửi thông báo thành công";
+stop
+
+note right
+  Email lỗi không ảnh hưởng:
+  thông báo nội bộ vẫn gửi thành công.
+  Admin được thông báo nếu email gửi thất bại.
+end note
+
+@enduml

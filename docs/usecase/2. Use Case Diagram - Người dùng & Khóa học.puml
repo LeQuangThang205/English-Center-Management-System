@@ -1,0 +1,40 @@
+@startuml PeopleAndCourseManagement
+' ============================================================
+' Baseline v1.0 — 2026-07-20
+' ============================================================
+left to right direction
+
+' Actors
+actor Student as ST
+actor Teacher as TC
+actor Admin as AD
+
+' System Boundary
+rectangle "English Center Management System" {
+  ' Use Cases
+  usecase UC1 as "Quản lý học viên"
+  usecase UC2 as "Quản lý giáo viên"
+  usecase UC3 as "Quản lý khóa học"
+  usecase UC4 as "Xem hồ sơ học viên"
+  usecase UC5 as "Xem hồ sơ giáo viên"
+  usecase UC6 as "Xem danh sách khóa học"
+  usecase UC7 as "Xem chi tiết khóa học"
+}
+
+' Relationships
+AD --> UC1
+AD --> UC2
+AD --> UC3
+AD --> UC4
+AD --> UC5
+AD --> UC6
+AD --> UC7
+TC --> UC4
+TC --> UC6
+TC --> UC7
+ST --> UC4
+ST --> UC6
+
+' Browse Courses có thể mở rộng thành View Course Detail (tùy chọn)
+UC6 ..> UC7 : <<extend>>
+@enduml

@@ -1,0 +1,33 @@
+@startuml UC20_DangKyKhoaHoc
+' ============================================================
+' UC-20: Đăng ký khóa học
+' Main Success: Student chọn lớp → xác nhận → tạo đăng ký "Chờ duyệt"
+' Critical: Lớp đầy, đã đăng ký trước, lớp không nhận đăng ký
+' ============================================================
+
+|Student|
+|Hệ thống|
+
+start
+
+:Chọn lớp học từ danh sách;
+
+|Hệ thống|
+:Kiểm tra lớp hợp lệ (Sắp khai giảng, còn chỗ, chưa đăng ký);
+
+if (Hợp lệ?) then (Có)
+  :Hiển thị thông tin xác nhận;
+  |Student|
+  :Xác nhận đăng ký;
+  |Hệ thống|
+  :Tạo bản ghi đăng ký "Chờ duyệt";
+  :Gửi thông báo đến Admin;
+  :Thông báo thành công;
+  stop
+else (Không)
+  :Thông báo lý do
+  (lớp đầy / đã đăng ký / không nhận đăng ký);
+  stop
+endif
+
+@enduml

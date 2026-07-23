@@ -1,0 +1,39 @@
+@startuml RegistrationAndEnrollment
+' ============================================================
+' Baseline v1.0 — 2026-07-20
+' ============================================================
+left to right direction
+
+' Actors
+actor Student as ST
+actor Admin as AD
+
+' System Boundary
+rectangle "English Center Management System" {
+  ' Use Cases
+  usecase UC1 as "Đăng ký khóa học"
+  usecase UC2 as "Xem chi tiết đăng ký"
+  usecase UC3 as "Xử lý đăng ký"
+  usecase UC4 as "Duyệt đăng ký"
+  usecase UC5 as "Từ chối đăng ký"
+  usecase UC6 as "Xem lịch sử ghi danh"
+}
+
+' Relationships
+' Chỉ Student đã đăng nhập mới được đăng ký khóa học
+ST --> UC1
+ST --> UC2
+ST --> UC6
+AD --> UC2
+AD --> UC3
+AD --> UC6
+
+' Process Registration là UC tổng quát, Approve và Reject là các trường hợp cụ thể
+UC3 <|-- UC4
+UC3 <|-- UC5
+
+' Approve và Reject đều bắt buộc phải xem chi tiết hồ sơ trước khi thực hiện
+UC4 ..> UC2 : <<include>>
+UC5 ..> UC2 : <<include>>
+
+@enduml

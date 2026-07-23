@@ -1,0 +1,36 @@
+@startuml NotificationAndOversight
+' ============================================================
+' Baseline v1.0 — 2026-07-20
+' ============================================================
+left to right direction
+
+' Actors
+actor Student as ST
+actor Teacher as TC
+actor Admin as AD
+actor "Email Service" as EM
+
+' System Boundary
+rectangle "English Center Management System" {
+  ' Use Cases
+  usecase UC1 as "Gửi thông báo"
+  usecase UC2 as "Xem bảng điều khiển"
+  usecase UC3 as "Xem báo cáo"
+  usecase UC4 as "Quản lý nhật ký hệ thống"
+  usecase UC5 as "Xem thông báo"
+  usecase UC6 as "Quản lý cài đặt hệ thống"
+}
+
+' Relationships
+AD --> UC1
+AD --> UC2
+AD --> UC3
+AD --> UC4
+AD --> UC6
+ST --> UC5
+TC --> UC5
+
+' Send Notification gọi Email Service (secondary actor) để gửi email
+UC1 --> EM
+
+@enduml

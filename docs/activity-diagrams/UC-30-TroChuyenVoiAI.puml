@@ -1,0 +1,40 @@
+@startuml UC30_TroChuyenVoiAI
+' ============================================================
+' UC-30: Trò chuyện với AI
+' Main Success: User hỏi → AI Service trả lời → hiển thị
+' Secondary Actor: AI Service (TBD)
+' Critical: AI Service timeout/lỗi
+' ============================================================
+
+|Người dùng (Guest/Student)|
+|Hệ thống|
+|AI Service|
+
+start
+
+:Nhập câu hỏi;
+:Gửi câu hỏi;
+
+|Hệ thống|
+:Gửi câu hỏi + ngữ cảnh đến AI Service;
+
+|AI Service|
+:Xử lý và trả về phản hồi;
+
+|Hệ thống|
+if (Có lỗi từ AI Service?) then (Có)
+  :Thông báo "AI đang bận, vui lòng thử lại sau";
+  stop
+else (Không)
+  :Lưu lịch sử chat (nếu là Student);
+  :Hiển thị phản hồi AI;
+
+  |Người dùng|
+  if (Hỏi tiếp?) then (Có)
+    :Quay lại nhập câu hỏi;
+  else (Không)
+    stop
+  endif
+endif
+
+@enduml

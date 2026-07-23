@@ -1,0 +1,212 @@
+@startuml UC-26-ThanhToan
+!pragma layout smetana
+
+title UC-26: Thanh toán (QR chuyển khoản)
+
+actor        "Student"                                     as Student
+actor        "Admin"                                       as Admin
+boundary     "PaymentPage\n(React)"                        as PaymentPage
+boundary     "AdminPaymentPage\n(React)"                   as AdminPaymentPage
+control      "PaymentController\n(REST)"                   as PaymentController
+control      "PaymentService"                              as PaymentService
+entity       "TransactionRepository"                       as TxRepo
+entity       "RegistrationRepository"                      as RegRepo
+entity       "ClassRepository"                             as ClassRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario (Student) ==
+
+Student -> PaymentPage: 1. Chọn đăng ký "Đã duyệt"
+Student -> PaymentPage: 2. Click "Thanh toán"
+PaymentPage -> PaymentController: 3. POST /api/payments/init\n{registrationId}
+activate PaymentController
+
+PaymentController -> PaymentService: 4. initiatePayment(registrationId)
+activate PaymentService
+
+PaymentService -> RegRepo: 5. findById(registrationId)
+activate RegRepo
+RegRepo -> DB: 6. SELECT * FROM registrations\nWHERE id = ?
+activate DB
+DB --> RegRepo: 7. Registration entity
+deactivate DB
+RegRepo --> PaymentService: 8. Registration
+deactivate RegRepo
+
+alt 9. Registration.status == "Approved"
+  PaymentService -> PaymentService: 10. Tạo mã giao dịch nội bộ
+  PaymentService -> TxRepo: 11. save(transaction)
+  activate TxRepo
+  TxRepo -> DB: 12. INSERT INTO transactions\n(registration_id, amount,\npayment_method, status,\ncreated_at)
+  activate DB
+  DB --> TxRepo: 13. Transaction entity (PENDING_CONFIRMATION)
+  deactivate DB
+  TxRepo --> PaymentService: 14. transaction
+  deactivate TxRepo
+
+  PaymentService --> PaymentController: 15. PaymentInitDTO\n{transactionId, amount,\nqrCodeUrl, bankInfo}
+  PaymentController --> PaymentPage: 16. 200 OK\n{QR code + thông tin TK}
+  deactivate PaymentController
+  PaymentPage -> PaymentPage: 17. Hiển thị QR + thông tin\nchuyển khoản
+  PaymentPage --> Student: 18. "Quét QR để chuyển khoản"
+
+  Student -> Student: 19. Chuyển khoản qua\nứng dụng ngân hàng
+  Student -> PaymentPage: 20. Click "Đã thanh toán"
+  PaymentPage -> PaymentController: 21. PUT /api/payments/{id}/mark-paid
+  activate PaymentController
+
+  PaymentController -> PaymentService: 22. markAsPaid(transactionId)
+  activate PaymentService
+
+  PaymentService -> TxRepo: 23. findById(transactionId)
+  activate TxRepo
+  TxRepo -> DB: 24. SELECT * FROM transactions\nWHERE id = ? FOR UPDATE
+  activate DB
+  DB --> TxRepo: 25. Transaction entity
+  deactivate DB
+  TxRepo --> PaymentService: 26. Transaction
+  deactivate TxRepo
+
+  alt 27. Transaction.status == "PENDING_CONFIRMATION"
+    PaymentService -> TxRepo: 28. updateStatus(transactionId, "PENDING_CONFIRMATION")
+    activate TxRepo
+    TxRepo -> DB: 29. UPDATE transactions SET\nstatus = 'PENDING_CONFIRMATION',\npaid_at = NOW()\nWHERE id = ?
+    activate DB
+    DB --> TxRepo: 30. success
+    deactivate DB
+    TxRepo --> PaymentService: 31. done
+    deactivate TxRepo
+
+    PaymentService --> PaymentController: 32. SuccessDTO\n{message: "Chờ Admin xác nhận"}
+    PaymentController --> PaymentPage: 33. 200 OK\n"Yêu cầu đã ghi nhận.\nChờ Admin xác nhận."
+    deactivate PaymentController
+    PaymentPage --> Student: 34. Thông báo\n"Vui lòng chờ Admin xác nhận"
+
+  else 27a. Status đã thay đổi
+    PaymentService --> PaymentController: 35. Throw InvalidStatusException
+    PaymentController --> PaymentPage: 36. 400 Bad Request\n"Giao dịch đã được xử lý"
+    deactivate PaymentController
+    PaymentPage --> Student: 37. Hiển thị thông báo
+  end
+
+else 9a. Registration không còn "Approved"
+  PaymentService --> PaymentController: 38. Throw InvalidRegistrationException
+  deactivate PaymentService
+  PaymentController --> PaymentPage: 39. 400 Bad Request\n"Đăng ký không hợp lệ"
+  deactivate PaymentController
+  PaymentPage --> Student: 40. Hiển thị thông báo
+end
+
+== Main Success Scenario (Admin Confirmation) ==
+
+Admin -> AdminPaymentPage: 41. Chọn "Quản lý thanh toán"
+AdminPaymentPage -> PaymentController: 42. GET /api/payments/pending
+activate PaymentController
+PaymentController -> PaymentService: 43. getPendingPayments()
+activate PaymentService
+PaymentService -> TxRepo: 44. findByStatus("PENDING_CONFIRMATION")
+activate TxRepo
+TxRepo -> DB: 45. SELECT t.*, r.student_name,\nc.name as course_name\nFROM transactions t\nJOIN registrations r\nJOIN classes c\nWHERE t.status = 'PENDING_CONFIRMATION'
+activate DB
+DB --> TxRepo: 46. List<Transaction>
+deactivate DB
+TxRepo --> PaymentService: 47. pendingList
+deactivate TxRepo
+PaymentService --> PaymentController: 48. List<PaymentDTO>
+deactivate PaymentService
+PaymentController --> AdminPaymentPage: 49. 200 OK\n{danh sách chờ xác nhận}
+deactivate PaymentController
+AdminPaymentPage -> Admin: 50. Hiển thị danh sách
+
+Admin -> Admin: 51. Kiểm tra giao dịch\nthực tế trên Internet Banking
+Admin -> AdminPaymentPage: 52. Chọn giao dịch\nvà click "Xác nhận"
+AdminPaymentPage -> PaymentController: 53. PUT /api/payments/{id}/confirm
+activate PaymentController
+
+PaymentController -> PaymentService: 54. confirmPayment(transactionId, adminId)
+activate PaymentService
+
+PaymentService -> TxRepo: 55. findById(transactionId)
+activate TxRepo
+TxRepo -> DB: 56. SELECT * FROM transactions\nWHERE id = ? FOR UPDATE
+activate DB
+DB --> TxRepo: 57. Transaction entity
+deactivate DB
+TxRepo --> PaymentService: 58. Transaction
+deactivate TxRepo
+
+alt 59. Transaction.status == "PENDING_CONFIRMATION"
+  PaymentService -> TxRepo: 60. updateStatus(transactionId, "SUCCESS", adminId)
+  activate TxRepo
+  TxRepo -> DB: 61. UPDATE transactions SET\nstatus = 'SUCCESS',\nconfirmed_by = ?,\nconfirmed_at = NOW()\nWHERE id = ?
+  activate DB
+  DB --> TxRepo: 62. success
+  deactivate DB
+  TxRepo --> PaymentService: 63. done
+  deactivate TxRepo
+
+  PaymentService -> RegRepo: 64. findRegByTransaction(transactionId)
+  activate RegRepo
+  RegRepo -> DB: 65. SELECT registration_id\nFROM transactions WHERE id = ?
+  activate DB
+  DB --> RegRepo: 66. registrationId
+  deactivate DB
+  RegRepo --> PaymentService: 67. regId
+  deactivate RegRepo
+
+  PaymentService -> RegRepo: 68. updateStatus(regId, "Paid")
+  activate RegRepo
+  RegRepo -> DB: 69. UPDATE registrations SET\nstatus = 'Paid'\nWHERE id = ?
+  activate DB
+  DB --> RegRepo: 70. success
+  deactivate DB
+  RegRepo --> PaymentService: 71. done
+  deactivate RegRepo
+
+  PaymentService -> ClassRepo: 72. incrementHeadcount(classId)
+  activate ClassRepo
+  ClassRepo -> DB: 73. UPDATE classes SET\ncurrent_headcount =\ncurrent_headcount + 1\nWHERE id = ?
+  activate DB
+  DB --> ClassRepo: 74. success
+  deactivate DB
+  ClassRepo --> PaymentService: 75. done
+  deactivate ClassRepo
+
+  PaymentService -> PaymentService: 76. Ghi Audit Log
+  PaymentService --> PaymentController: 77. SuccessDTO
+  deactivate PaymentService
+  PaymentController --> AdminPaymentPage: 78. 200 OK\n"Xác nhận thanh toán thành công"
+  deactivate PaymentController
+  AdminPaymentPage -> AdminPaymentPage: 79. Refresh danh sách
+  AdminPaymentPage --> Admin: 80. "Xác nhận thành công"
+
+else 59a. Status đã thay đổi
+  PaymentService --> PaymentController: 81. Throw AlreadyProcessedException
+  deactivate PaymentService
+  PaymentController --> AdminPaymentPage: 82. 409 Conflict\n"Giao dịch đã được xử lý"
+  deactivate PaymentController
+  AdminPaymentPage --> Admin: 83. Hiển thị thông báo
+end
+
+== Critical Exception: DB Error ==
+
+Student -> PaymentPage: 84. Thao tác thanh toán
+PaymentPage -> PaymentController: 85. request
+activate PaymentController
+PaymentController -> PaymentService: 86. call
+activate PaymentService
+PaymentService -> TxRepo: 87. db operation
+activate TxRepo
+TxRepo -> DB: 88. SQL ...
+activate DB
+DB --> TxRepo: 89. SQL Exception
+deactivate DB
+TxRepo --> PaymentService: 90. Throw DataAccessException
+deactivate TxRepo
+PaymentService --> PaymentController: 91. Throw SystemErrorException
+deactivate PaymentService
+PaymentController --> PaymentPage: 92. 500 Internal Server Error
+deactivate PaymentController
+PaymentPage --> Student: 93. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml

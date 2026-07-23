@@ -1,0 +1,31 @@
+@startuml Payment
+' ============================================================
+' Baseline v1.0 — 2026-07-20
+' ============================================================
+left to right direction
+
+' Actors
+actor Student as ST
+actor Admin as AD
+actor "Payment Gateway" as PG
+
+' System Boundary
+rectangle "English Center Management System" {
+  ' Use Cases
+  usecase UC1 as "Thanh toán"
+  usecase UC2 as "Xem lịch sử thanh toán"
+  usecase UC3 as "Xem nhật ký giao dịch"
+  usecase UC4 as "Đối soát thanh toán"
+}
+
+' Relationships
+ST --> UC1
+ST --> UC2
+AD --> UC2
+AD --> UC3
+AD --> UC4
+
+' Make Payment gọi cổng thanh toán bên thứ ba (secondary actor)
+UC1 --> PG
+
+@enduml

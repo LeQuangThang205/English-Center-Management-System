@@ -1,0 +1,68 @@
+@startuml UC26_ThanhToan
+' ============================================================
+' UC-26: Thanh toán
+' Main Success: Student quét QR -> chuyển khoản -> báo đã thanh toán
+' -> Admin kiểm tra và xác nhận -> thêm vào lớp
+' Critical: Giao dịch đã xử lý, lỗi DB
+' ============================================================
+
+|Student|
+|Hệ thống|
+|Admin|
+
+start
+
+:Chọn đăng ký "Đã duyệt";
+:Chọn "Thanh toán";
+
+|Hệ thống|
+:Tạo giao dịch "Chờ xác nhận";
+:Hiển thị QR chuyển khoản
+& thông tin tài khoản ngân hàng;
+
+|Student|
+:Chuyển khoản qua
+ứng dụng ngân hàng;
+:Nhấn "Đã thanh toán";
+
+|Hệ thống|
+:Ghi nhận yêu cầu
+"Chờ Admin xác nhận";
+:Thông báo "Vui lòng chờ
+Admin xác nhận";
+
+|Admin|
+:Kiểm tra giao dịch thực tế
+trên Internet Banking;
+
+if (Khớp?) then (Có)
+  :Xác nhận thanh toán;
+
+  |Hệ thống|
+  :Cập nhật Transaction
+  "Thành công";
+  :Cập nhật Đăng ký
+  "Đã thanh toán";
+  :Thêm Student vào lớp
+  (tăng sĩ số);
+  :Thông báo thành công;
+
+else (Không)
+  :Từ chối thanh toán;
+
+  |Hệ thống|
+  :Cập nhật Transaction
+  "Thất bại";
+  :Thông báo lý do;
+endif
+
+stop
+
+note right
+  **Ghi chú:**
+  • QR là mã tĩnh của trung tâm
+  • Student tự chuyển khoản ngoài hệ thống
+  • Admin đối chiếu qua Internet Banking thực tế
+end note
+
+@enduml

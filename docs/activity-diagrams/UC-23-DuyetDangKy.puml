@@ -1,0 +1,43 @@
+@startuml UC23_DuyetDangKy
+' ============================================================
+' UC-23: Duyệt đăng ký
+' Main Success: Admin duyệt → "Đã duyệt" → thông báo Student
+' Include: UC-21 (Xem chi tiết đăng ký)
+' Critical: Đăng ký đã bị xử lý bởi Admin khác
+' ============================================================
+
+|Admin|
+|Hệ thống|
+
+start
+
+:Chọn đăng ký "Chờ duyệt" từ danh sách;
+
+|Hệ thống|
+:Hiển thị chi tiết đăng ký (UC-21);
+
+|Admin|
+:Chọn "Duyệt";
+
+|Hệ thống|
+:Kiểm tra trạng thái còn "Chờ duyệt"?;
+
+if (Còn?) then (Có)
+  :Cập nhật thành "Đã duyệt";
+  :Ghi Audit Log;
+  :Gửi thông báo Student;
+  :Thông báo thành công;
+  stop
+else (Đã xử lý)
+  :Thông báo "Đã được xử lý bởi người dùng khác";
+  :Tải lại thông tin;
+  stop
+endif
+
+note right
+  **Thao tác khác:**
+  • Từ chối (UC-24): Admin nhập lý do → "Từ chối" → thông báo Student
+  • Admin có thể hủy thao tác ở bước xác nhận
+end note
+
+@enduml

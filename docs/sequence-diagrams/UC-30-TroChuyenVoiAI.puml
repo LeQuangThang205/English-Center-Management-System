@@ -1,0 +1,115 @@
+@startuml UC-30-TroChuyenVoiAI
+!pragma layout smetana
+
+title UC-30: Trò chuyện với AI
+
+actor        "Người dùng\n(Guest/Student)"                 as User
+boundary     "ChatPage\n(React)"                           as ChatPage
+control      "ChatController\n(REST)"                      as ChatController
+control      "ChatService"                                 as ChatService
+entity       "ChatHistoryRepository"                       as ChatRepo
+database     "MySQL"                                        as DB
+collections  "AIService\n(Bên thứ ba)"                      as AIService
+
+== Main Success Scenario ==
+
+User -> ChatPage: 1. Mở cửa sổ chat AI
+ChatPage -> ChatPage: 2. Hiển thị chat window\n+lịch sử gần đây (nếu có)
+User -> ChatPage: 3. Nhập câu hỏi
+User -> ChatPage: 4. Click "Gửi"
+ChatPage -> ChatController: 5. POST /api/ai/chat\n{message, conversationId?}
+activate ChatController
+
+ChatController -> ChatService: 6. sendMessage(user, message, convId)
+activate ChatService
+
+alt 7. Student đã đăng nhập
+  ChatService -> ChatRepo: 8. getOrCreateConversation(userId, convId)
+  activate ChatRepo
+  ChatRepo -> DB: 9. SELECT/INSERT conversation
+  activate DB
+  DB --> ChatRepo: 10. conversationId
+  deactivate DB
+  ChatRepo --> ChatService: 11. conversation context
+  deactivate ChatRepo
+else 7a. Guest chưa đăng nhập
+  ChatService -> ChatService: 12. Tạo context tạm thời\n(không lưu lịch sử)
+end
+
+ChatService -> AIService: 13. POST /api/ai/ask\n{message, context, role}
+activate AIService
+AIService -> AIService: 14. Xử lý câu hỏi\nvới ngữ cảnh
+
+alt 15. AI Service phản hồi thành công
+  AIService --> ChatService: 16. AI response
+  deactivate AIService
+
+  alt 17. Student -> lưu lịch sử
+    ChatService -> ChatRepo: 18. saveMessage(conversationId, question, response)
+    activate ChatRepo
+    ChatRepo -> DB: 19. INSERT INTO chat_messages\n(conversation_id, question,\nresponse, created_at)
+    activate DB
+    DB --> ChatRepo: 20. success
+    deactivate DB
+    ChatRepo --> ChatService: 21. done
+    deactivate ChatRepo
+  else 17a. Guest -> không lưu
+  end
+
+  ChatService --> ChatController: 22. ChatResponseDTO\n{answer, conversationId}
+  deactivate ChatService
+  ChatController --> ChatPage: 23. 200 OK\n{câu trả lời}
+  deactivate ChatController
+  ChatPage -> ChatPage: 24. Hiển thị câu trả lời AI
+  ChatPage --> User: 25. Hiển thị phản hồi
+
+else 15a. AI Service lỗi / timeout
+  AIService --> ChatService: 26. Exception / timeout
+  deactivate AIService
+  ChatService --> ChatController: 27. Throw AIServiceException
+  deactivate ChatService
+  ChatController --> ChatPage: 28. 503 Service Unavailable\n"AI đang bận, vui lòng thử lại sau"
+  deactivate ChatController
+  ChatPage --> User: 29. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: Empty Question ==
+
+User -> ChatPage: 30. Click "Gửi" mà không nhập
+ChatPage -> ChatController: 31. POST /api/ai/chat\n{message: ""}
+activate ChatController
+ChatController -> ChatService: 32. sendMessage(user, "", convId)
+activate ChatService
+ChatService --> ChatController: 33. Throw EmptyMessageException
+deactivate ChatService
+ChatController --> ChatPage: 34. 400 Bad Request\n"Vui lòng nhập câu hỏi"
+deactivate ChatController
+ChatPage --> User: 35. Hiển thị thông báo
+
+== Critical Exception: DB Error khi lưu history ==
+
+User -> ChatPage: 36. Gửi câu hỏi
+ChatPage -> ChatController: 37. POST /api/ai/chat
+activate ChatController
+ChatController -> ChatService: 38. sendMessage(user, message, convId)
+activate ChatService
+ChatService -> AIService: 39. ask(message, context)
+activate AIService
+AIService --> ChatService: 40. AI response
+deactivate AIService
+ChatService -> ChatRepo: 41. saveMessage(convId, question, response)
+activate ChatRepo
+ChatRepo -> DB: 42. INSERT ...
+activate DB
+DB --> ChatRepo: 43. SQL Exception
+deactivate DB
+ChatRepo --> ChatService: 44. Throw DataAccessException
+deactivate ChatRepo
+ChatService -> ChatService: 45. Log error (vẫn hiển thị response)
+ChatService --> ChatController: 46. ChatResponseDTO\n{answer, warning: "Lưu lịch sử thất bại"}
+deactivate ChatService
+ChatController --> ChatPage: 47. 200 OK\n{câu trả lời + cảnh báo}
+deactivate ChatController
+ChatPage --> User: 48. Hiển thị câu trả lời\n(kèm thông báo phụ)
+
+@enduml

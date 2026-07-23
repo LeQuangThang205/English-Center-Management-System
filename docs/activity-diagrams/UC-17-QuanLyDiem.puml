@@ -1,0 +1,44 @@
+@startuml UC17_QuanLyDiem
+' ============================================================
+' UC-17: Quản lý điểm (Chấm điểm)
+' Main Success: Teacher nhập điểm → kiểm tra → lưu
+' Critical: Điểm ngoài thang 0-10
+' ============================================================
+
+|Teacher|
+|Hệ thống|
+
+start
+
+:Chọn lớp học;
+
+|Hệ thống|
+:Kiểm tra lớp đã bắt đầu?;
+
+if (Chưa bắt đầu?) then (Có)
+  :Thông báo "Lớp học chưa bắt đầu";
+  stop
+else (Đã bắt đầu)
+  :Hiển thị bảng điểm lớp;
+
+  |Teacher|
+  :Nhập điểm (giữa kỳ, cuối kỳ, tổng kết) và nhận xét;
+  :Gửi điểm;
+
+  |Hệ thống|
+  :Kiểm tra điểm trong thang 0-10;
+
+  if (Hợp lệ?) then (Có)
+    :Lưu điểm và nhận xét;
+    :Ghi Audit Log;
+    :Cập nhật bảng điểm;
+    :Thông báo thành công;
+    stop
+  else (Không)
+    :Thông báo "Điểm phải từ 0 đến 10";
+    :Quay lại nhập;
+    stop
+  endif
+endif
+
+@enduml

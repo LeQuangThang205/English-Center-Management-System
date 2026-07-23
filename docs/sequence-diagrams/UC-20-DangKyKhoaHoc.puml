@@ -1,0 +1,120 @@
+@startuml UC-20-DangKyKhoaHoc
+!pragma layout smetana
+
+title UC-20: Đăng ký khóa học
+
+actor        "Student"                                     as Student
+boundary     "CourseRegistrationPage\n(React)"             as RegPage
+control      "RegistrationController\n(REST)"              as RegController
+control      "RegistrationService"                         as RegService
+entity       "ClassRepository"                             as ClassRepo
+entity       "RegistrationRepository"                      as RegRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario ==
+
+Student -> RegPage: 1. Chọn khóa học
+Student -> RegPage: 2. Chọn lớp muốn đăng ký
+Student -> RegPage: 3. Click "Đăng ký"
+RegPage -> RegController: 4. POST /api/registrations\n{classId}
+activate RegController
+
+RegController -> RegService: 5. register(studentId, classId)
+activate RegService
+
+RegService -> ClassRepo: 6. findById(classId)
+activate ClassRepo
+ClassRepo -> DB: 7. SELECT * FROM classes\nWHERE id = ?
+activate DB
+DB --> ClassRepo: 8. Class entity
+deactivate DB
+ClassRepo --> RegService: 9. Class
+deactivate ClassRepo
+
+alt 10. Class hợp lệ\n(status == "About to open")
+  alt 11. Còn chỗ trống\n(current < max)
+    RegService -> RegRepo: 12. existsByStudentAndClass(studentId, classId)
+    activate RegRepo
+    RegRepo -> DB: 13. SELECT COUNT(*) FROM registrations\nWHERE student_id = ?\nAND class_id = ?
+    activate DB
+    DB --> RegRepo: 14. count
+    deactivate DB
+    RegRepo --> RegService: 15. boolean
+    deactivate RegRepo
+
+    alt 16. Chưa đăng ký trước đó
+      RegService --> RegController: 17. ConfirmationDTO\n{tên lớp, lịch học, học phí}
+      deactivate RegService
+      RegController --> RegPage: 18. 200 OK\n{thông tin xác nhận}
+      deactivate RegController
+      RegPage -> RegPage: 19. Hiển thị màn hình\nxác nhận đăng ký
+      RegPage --> Student: 20. Hiển thị thông tin\nvà nút "Xác nhận"
+
+      Student -> RegPage: 21. Click "Xác nhận"
+      RegPage -> RegController: 22. PUT /api/registrations/confirm\n{classId}
+      activate RegController
+
+      RegController -> RegService: 23. confirmRegistration(studentId, classId)
+      activate RegService
+      RegService -> RegRepo: 24. save(registration)
+      activate RegRepo
+      RegRepo -> DB: 25. INSERT INTO registrations\n(student_id, class_id, status,\nregistered_at)
+      activate DB
+      DB --> RegRepo: 26. Registration entity
+      deactivate DB
+      RegRepo --> RegService: 27. savedRegistration
+      deactivate RegRepo
+
+      RegService -> RegService: 28. Gửi thông báo đến Admin\nvề yêu cầu đăng ký mới
+      RegService --> RegController: 29. RegistrationDTO\n{status: "Pending"}
+      deactivate RegService
+      RegController --> RegPage: 30. 201 Created\n"Đăng ký thành công!\nChờ Admin duyệt"
+      deactivate RegController
+      RegPage --> Student: 31. Thông báo thành công
+
+    else 16a. Đã đăng ký trước đó
+      RegService --> RegController: 32. Throw DuplicateRegistrationException
+      deactivate RegService
+      RegController --> RegPage: 33. 409 Conflict\n"Bạn đã đăng ký lớp này rồi"
+      deactivate RegController
+      RegPage --> Student: 34. Hiển thị thông báo
+    end
+
+  else 11a. Lớp đã đầy
+    RegService --> RegController: 35. Throw ClassFullException
+    deactivate RegService
+    RegController --> RegPage: 36. 400 Bad Request\n"Lớp đã đầy, vui lòng chọn lớp khác"
+    deactivate RegController
+    RegPage --> Student: 37. Hiển thị thông báo
+  end
+
+else 10a. Class không hợp lệ
+  RegService --> RegController: 38. Throw InvalidClassException
+  deactivate RegService
+  RegController --> RegPage: 39. 400 Bad Request\n"Lớp không nhận đăng ký"
+  deactivate RegController
+  RegPage --> Student: 40. Hiển thị thông báo
+end
+
+== Critical Exception: DB Error ==
+
+Student -> RegPage: 41. Xác nhận đăng ký
+RegPage -> RegController: 42. PUT /api/registrations/confirm
+activate RegController
+RegController -> RegService: 43. confirmRegistration(studentId, classId)
+activate RegService
+RegService -> RegRepo: 44. save(registration)
+activate RegRepo
+RegRepo -> DB: 45. INSERT ...
+activate DB
+DB --> RegRepo: 46. SQL Exception
+deactivate DB
+RegRepo --> RegService: 47. Throw DataAccessException
+deactivate RegRepo
+RegService --> RegController: 48. Throw SystemErrorException
+deactivate RegService
+RegController --> RegPage: 49. 500 Internal Server Error
+deactivate RegController
+RegPage --> Student: 50. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml

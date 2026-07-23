@@ -1,0 +1,45 @@
+@startuml UC07_QuanLyHocVien
+' ============================================================
+' UC-07: Quản lý học viên
+' Main Success: Admin tạo học viên mới
+' CRUD: Cập nhật / Vô hiệu hóa / Kích hoạt → tham chiếu UC-07 spec
+' Critical: Email đã tồn tại
+' ============================================================
+
+|Admin|
+|Hệ thống|
+
+start
+
+:Chọn "Thêm học viên";
+
+|Hệ thống|
+:Hiển thị form tạo học viên;
+
+|Admin|
+:Nhập thông tin học viên;
+:Gửi form;
+
+|Hệ thống|
+:Kiểm tra email duy nhất trong hệ thống;
+
+if (Email đã tồn tại?) then (Có)
+  :Thông báo "Email đã được sử dụng";
+  :Quay lại nhập;
+  stop
+else (Chưa)
+  :Tạo tài khoản User + hồ sơ Student;
+  :Ghi Audit Log;
+  :Thông báo thành công;
+  stop
+endif
+
+note right
+  **Các thao tác khác (CRUD):**
+  • Cập nhật: Admin chọn học viên → sửa thông tin → lưu
+  • Vô hiệu hóa: Admin chọn → xác nhận → chuyển inactive
+  • Kích hoạt: Admin chọn → xác nhận → chuyển active
+  • Tìm kiếm: Nhập từ khóa → lọc danh sách
+end note
+
+@enduml

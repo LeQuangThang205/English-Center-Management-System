@@ -1,0 +1,115 @@
+@startuml UC-16-DiemDanh
+!pragma layout smetana
+
+title UC-16: Điểm danh
+
+actor        "Teacher"                                     as Teacher
+boundary     "AttendancePage\n(React)"                     as AttendPage
+control      "AttendanceController\n(REST)"                as AttendController
+control      "AttendanceService"                           as AttendService
+entity       "ClassRepository"                             as ClassRepo
+entity       "AttendanceRepository"                        as AttendRepo
+entity       "StudentRepository"                           as StudentRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario ==
+
+Teacher -> AttendPage: 1. Chọn lớp học
+Teacher -> AttendPage: 2. Chọn ngày điểm danh
+AttendPage -> AttendController: 3. GET /api/attendance/init\n?classId=&date=
+activate AttendController
+
+AttendController -> AttendService: 4. prepareAttendance(classId, date)
+activate AttendService
+
+AttendService -> ClassRepo: 5. findById(classId)
+activate ClassRepo
+ClassRepo -> DB: 6. SELECT * FROM classes\nWHERE id = ?
+activate DB
+DB --> ClassRepo: 7. Class entity
+deactivate DB
+ClassRepo --> AttendService: 8. Class
+deactivate ClassRepo
+
+alt 9. Class status == "Studying"
+  AttendService -> AttendRepo: 10. findByClassAndDate(classId, date)
+  activate AttendRepo
+  AttendRepo -> DB: 11. SELECT * FROM attendances\nWHERE class_id = ? AND date = ?
+  activate DB
+  DB --> AttendRepo: 12. existingAttendance
+  deactivate DB
+  AttendRepo --> AttendService: 13. Optional<Attendance>
+  deactivate AttendRepo
+
+  alt 14. Chưa có điểm danh -> tạo mới
+    AttendService -> AttendRepo: 15. createAttendanceSheet(classId, date)
+    AttendRepo -> DB: 16. INSERT INTO attendance_sheets\n(class_id, date, status)
+    activate DB
+    DB --> AttendRepo: 17. Sheet entity
+    deactivate DB
+  else 14a. Đã có -> chế độ sửa
+  end
+
+  AttendService -> StudentRepo: 18. findByClassId(classId)
+  activate StudentRepo
+  StudentRepo -> DB: 19. SELECT s.* FROM students s\nJOIN class_students cs\nON s.id = cs.student_id\nWHERE cs.class_id = ?
+  activate DB
+  DB --> StudentRepo: 20. List<Student>
+  deactivate DB
+  StudentRepo --> AttendService: 21. studentList
+  deactivate StudentRepo
+
+  AttendService --> AttendController: 22. AttendanceInitDTO\n{students, sheetId}
+  AttendController --> AttendPage: 23. 200 OK\n{student list}
+  deactivate AttendController
+  AttendPage -> AttendPage: 24. Hiển thị danh sách\nhọc viên + checkbox
+
+  Teacher -> AttendPage: 25. Đánh dấu trạng thái\n(Có mặt/Vắng/Vắng có phép)
+  Teacher -> AttendPage: 26. Click "Lưu điểm danh"
+  AttendPage -> AttendController: 27. PUT /api/attendance\n{sheetId, records[]}
+  activate AttendController
+
+  AttendController -> AttendService: 28. saveAttendance(sheetId, records)
+  activate AttendService
+  AttendService -> AttendRepo: 29. saveAll(records)
+  activate AttendRepo
+  AttendRepo -> DB: 30. INSERT INTO attendance_records\n(sheet_id, student_id, status)
+  activate DB
+  DB --> AttendRepo: 31. success
+  deactivate DB
+  AttendRepo --> AttendService: 32. savedRecords
+  deactivate AttendRepo
+  AttendService --> AttendController: 33. SuccessDTO
+  AttendController --> AttendPage: 34. 200 OK\n"Điểm danh thành công"
+  deactivate AttendController
+  AttendPage --> Teacher: 35. Thông báo thành công
+
+else 9a. Class status != "Studying"
+  AttendService --> AttendController: 36. Throw InvalidClassStatusException
+  AttendController --> AttendPage: 37. 400 Bad Request\n"Lớp chưa bắt đầu hoặc đã kết thúc"
+  deactivate AttendController
+  AttendPage --> Teacher: 38. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: DB Error ==
+
+Teacher -> AttendPage: 39. Thao tác điểm danh
+AttendPage -> AttendController: 40. PUT /api/attendance
+activate AttendController
+AttendController -> AttendService: 41. saveAttendance(sheetId, records)
+activate AttendService
+AttendService -> AttendRepo: 42. saveAll(records)
+activate AttendRepo
+AttendRepo -> DB: 43. INSERT ...
+activate DB
+DB --> AttendRepo: 44. SQL Exception
+deactivate DB
+AttendRepo --> AttendService: 45. Throw DataAccessException
+deactivate AttendRepo
+AttendService --> AttendController: 46. Throw SystemErrorException
+deactivate AttendService
+AttendController --> AttendPage: 47. 500 Internal Server Error
+deactivate AttendController
+AttendPage --> Teacher: 48. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml

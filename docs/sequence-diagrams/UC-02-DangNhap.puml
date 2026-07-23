@@ -1,0 +1,98 @@
+@startuml UC-02-DangNhap
+!pragma layout smetana
+
+title UC-02: Đăng nhập
+
+actor        "Người dùng\n(Guest/Student/Teacher/Admin)" as User
+boundary     "LoginPage\n(React)"                        as LoginPage
+control      "AuthController\n(REST)"                     as AuthController
+control      "AuthService"                                as AuthService
+entity       "UserRepository"                             as UserRepo
+database     "MySQL"                                       as DB
+
+== Main Success Scenario ==
+
+User -> LoginPage: 1. Mở trang đăng nhập
+LoginPage -> LoginPage: 2. Hiển thị form\n(email + password)
+User -> LoginPage: 3. Nhập email & password
+User -> LoginPage: 4. Click "Đăng nhập"
+LoginPage -> AuthController: 5. POST /api/auth/login\n(email, password)
+activate AuthController
+
+AuthController -> AuthService: 6. login(email, password)
+activate AuthService
+
+AuthService -> UserRepo: 7. findByEmail(email)
+activate UserRepo
+UserRepo -> DB: 8. SELECT * FROM users\nWHERE email = ?
+activate DB
+DB --> UserRepo: 9. User entity
+deactivate DB
+UserRepo --> AuthService: 10. Optional<User>
+deactivate UserRepo
+
+alt 11. Email tồn tại
+  AuthService -> AuthService: 12. Verify bcrypt password
+  alt 12a. Password đúng
+    AuthService -> AuthService: 13. Kiểm tra account status
+    alt 13a. Account active
+      AuthService -> AuthService: 14. Generate JWT\n(userId, role, expiry)
+      AuthService --> AuthController: 15. JWT token + role + userId
+      deactivate AuthService
+      AuthController --> LoginPage: 16. 200 OK\n{token, role, userId}
+      deactivate AuthController
+      LoginPage -> LoginPage: 17. Lưu JWT vào\nlocalStorage
+      LoginPage -> User: 18. Redirect đến\ntrang chủ theo role
+    else 13b. Account bị disabled
+      AuthService --> AuthController: 19. Throw AccountDisabledException
+      deactivate AuthService
+      AuthController --> LoginPage: 20. 403 Forbidden\n"Tài khoản đã bị vô hiệu hóa"
+      deactivate AuthController
+      LoginPage --> User: 21. Hiển thị thông báo lỗi
+    end
+  else 12b. Password sai
+    AuthService -> AuthService: 22. Tăng failedAttempts counter
+    alt 22a. failedAttempts >= 5
+      AuthService -> AuthService: 23. Lock account 15 phút
+      AuthService --> AuthController: 24. Throw AccountLockedException
+      deactivate AuthService
+      AuthController --> LoginPage: 25. 423 Locked\n"Tài khoản bị khóa 15 phút"
+      deactivate AuthController
+    else 22b. failedAttempts < 5
+      AuthService --> AuthController: 26. Throw InvalidCredentialsException
+      deactivate AuthService
+      AuthController --> LoginPage: 27. 401 Unauthorized\n"Email hoặc mật khẩu không đúng"
+      deactivate AuthController
+    end
+    LoginPage --> User: 28. Hiển thị thông báo lỗi
+  end
+else 11a. Email không tồn tại
+  AuthService --> AuthController: 29. Throw InvalidCredentialsException
+  deactivate AuthService
+  AuthController --> LoginPage: 30. 401 Unauthorized\n"Email hoặc mật khẩu không đúng"
+  deactivate AuthController
+  LoginPage --> User: 31. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: DB Connection Error ==
+
+User -> LoginPage: 32. Nhập email & password
+LoginPage -> AuthController: 33. POST /api/auth/login
+activate AuthController
+AuthController -> AuthService: 34. login(email, password)
+activate AuthService
+AuthService -> UserRepo: 35. findByEmail(email)
+activate UserRepo
+UserRepo -> DB: 36. SELECT ...
+activate DB
+DB --> UserRepo: 37. SQL Exception
+deactivate DB
+UserRepo --> AuthService: 38. Throw DataAccessException
+deactivate UserRepo
+AuthService --> AuthController: 39. Throw SystemErrorException
+deactivate AuthService
+AuthController --> LoginPage: 40. 500 Internal Server Error\n"Hệ thống có lỗi, vui lòng thử lại"
+deactivate AuthController
+LoginPage --> User: 41. Hiển thị thông báo lỗi
+
+@enduml

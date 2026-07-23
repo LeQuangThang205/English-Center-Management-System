@@ -1,0 +1,100 @@
+@startuml UC-23-DuyetDangKy
+!pragma layout smetana
+
+title UC-23: Duyệt đăng ký
+
+actor        "Admin"                                       as Admin
+boundary     "RegistrationApprovalPage\n(React)"          as ApprovalPage
+control      "ApprovalController\n(REST)"                 as ApprovalController
+control      "ApprovalService"                             as ApprovalService
+entity       "RegistrationRepository"                      as RegRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario ==
+
+Admin -> ApprovalPage: 1. Chọn mục "Duyệt đăng ký"
+ApprovalPage -> ApprovalController: 2. GET /api/registrations/pending
+activate ApprovalController
+ApprovalController -> ApprovalService: 3. getPendingRegistrations()
+activate ApprovalService
+ApprovalService -> RegRepo: 4. findByStatus("Pending")
+activate RegRepo
+RegRepo -> DB: 5. SELECT r.*, c.name, stu.full_name\nFROM registrations r\nJOIN classes c JOIN students stu\nWHERE r.status = 'Pending'
+activate DB
+DB --> RegRepo: 6. List<Registration>
+deactivate DB
+RegRepo --> ApprovalService: 7. pendingList
+deactivate RegRepo
+ApprovalService --> ApprovalController: 8. List<RegistrationDTO>
+ApprovalController --> ApprovalPage: 9. 200 OK\n{danh sách chờ duyệt}
+deactivate ApprovalController
+ApprovalPage -> ApprovalPage: 10. Hiển thị danh sách\nđăng ký chờ duyệt
+
+Admin -> ApprovalPage: 11. Chọn một đăng ký
+Admin -> ApprovalPage: 12. Xem chi tiết (UC-21)
+Admin -> ApprovalPage: 13. Click "Duyệt"
+ApprovalPage -> ApprovalPage: 14. Hiển thị hộp thoại\nxác nhận
+Admin -> ApprovalPage: 15. Xác nhận duyệt
+ApprovalPage -> ApprovalController: 16. PUT /api/registrations/{id}/approve
+activate ApprovalController
+
+ApprovalController -> ApprovalService: 17. approveRegistration(id)
+activate ApprovalService
+
+ApprovalService -> RegRepo: 18. findById(id)
+activate RegRepo
+RegRepo -> DB: 19. SELECT * FROM registrations\nWHERE id = ? FOR UPDATE
+activate DB
+DB --> RegRepo: 20. Registration entity
+deactivate DB
+RegRepo --> ApprovalService: 21. Registration
+deactivate RegRepo
+
+alt 22. Registration.status == "Pending"
+  ApprovalService -> RegRepo: 23. updateStatus(id, "Approved")
+  activate RegRepo
+  RegRepo -> DB: 24. UPDATE registrations\nSET status = 'Approved',\napproved_at = NOW(),\napproved_by = ?\nWHERE id = ?
+  activate DB
+  DB --> RegRepo: 25. success
+  deactivate DB
+  RegRepo --> ApprovalService: 26. done
+  deactivate RegRepo
+
+  ApprovalService -> ApprovalService: 27. Ghi Audit Log
+  ApprovalService -> ApprovalService: 28. Gửi thông báo đến Student\n"Đăng ký của bạn đã được duyệt"
+  ApprovalService --> ApprovalController: 29. SuccessDTO
+  ApprovalController --> ApprovalPage: 30. 200 OK\n"Đã duyệt thành công"
+  deactivate ApprovalController
+  ApprovalPage -> ApprovalPage: 31. Refresh danh sách
+  ApprovalPage --> Admin: 32. Thông báo thành công
+
+else 22a. Status đã thay đổi
+  ApprovalService --> ApprovalController: 33. Throw AlreadyProcessedException
+  ApprovalController --> ApprovalPage: 34. 409 Conflict\n"Đăng ký đã được xử lý\nbởi người dùng khác"
+  deactivate ApprovalController
+  ApprovalPage -> ApprovalPage: 35. Tải lại thông tin
+  ApprovalPage --> Admin: 36. Hiển thị thông báo
+end
+
+== Critical Exception: DB Error ==
+
+Admin -> ApprovalPage: 37. Xác nhận duyệt
+ApprovalPage -> ApprovalController: 38. PUT /api/registrations/{id}/approve
+activate ApprovalController
+ApprovalController -> ApprovalService: 39. approveRegistration(id)
+activate ApprovalService
+ApprovalService -> RegRepo: 40. findById(id)
+activate RegRepo
+RegRepo -> DB: 41. SELECT ...
+activate DB
+DB --> RegRepo: 42. SQL Exception
+deactivate DB
+RegRepo --> ApprovalService: 43. Throw DataAccessException
+deactivate RegRepo
+ApprovalService --> ApprovalController: 44. Throw SystemErrorException
+deactivate ApprovalService
+ApprovalController --> ApprovalPage: 45. 500 Internal Server Error
+deactivate ApprovalController
+ApprovalPage --> Admin: 46. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml

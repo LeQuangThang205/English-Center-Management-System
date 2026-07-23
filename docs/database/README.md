@@ -36,9 +36,27 @@ erDiagram
 |---------|-------------|------|--------|
 | — | *No migrations created yet.* | | |
 
-## Seed Data
+## Entities
 
-*Describe how seed/fixture data is managed here.*
+### Transaction
+
+Bảng ghi nhận giao dịch thanh toán qua QR chuyển khoản thủ công (UC-26).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT (PK) | ID tự tăng |
+| `registration_id` | BIGINT (FK) | FK → registrations.id |
+| `amount` | DECIMAL(10,2) | Số tiền thanh toán |
+| `payment_method` | ENUM('BANK_TRANSFER') | Phương thức thanh toán |
+| `status` | ENUM('PENDING_CONFIRMATION', 'SUCCESS', 'FAILED') | Trạng thái giao dịch |
+| `created_at` | DATETIME | Thời điểm tạo |
+| `paid_at` | DATETIME NULL | Thời điểm Student báo đã thanh toán |
+| `confirmed_at` | DATETIME NULL | Thời điểm Admin xác nhận |
+| `confirmed_by` | BIGINT NULL (FK) | FK → users.id (Admin xác nhận) |
+
+**Lưu ý:** Thanh toán thực hiện qua QR chuyển khoản thủ công, không qua cổng thanh toán bên thứ ba.
+
+## Seed Data
 
 ## References
 

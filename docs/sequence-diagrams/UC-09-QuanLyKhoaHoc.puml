@@ -1,0 +1,83 @@
+@startuml UC-09-QuanLyKhoaHoc
+!pragma layout smetana
+
+title UC-09: Quản lý khóa học (Thêm khóa học)
+
+actor        "Admin"                                       as Admin
+boundary     "CourseManagementPage\n(React)"               as CoursePage
+control      "CourseController\n(REST)"                    as CourseController
+control      "CourseService"                               as CourseService
+entity       "CourseRepository"                            as CourseRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario ==
+
+Admin -> CoursePage: 1. Chọn "Thêm khóa học"
+CoursePage -> CoursePage: 2. Hiển thị form\n(tên, mô tả, học phí,\ncấp độ, thời lượng)
+Admin -> CoursePage: 3. Nhập thông tin khóa học
+Admin -> CoursePage: 4. Click "Lưu"
+CoursePage -> CourseController: 5. POST /api/courses\n{name, description, tuition,\nlevel, duration}
+activate CourseController
+
+CourseController -> CourseService: 6. createCourse(data)
+activate CourseService
+
+CourseService -> CourseService: 7. Validate name not empty
+CourseService -> CourseService: 8. Validate tuition > 0
+CourseService -> CourseService: 9. Validate level\n(Beginner/Intermediate/Advanced)
+
+alt 10. Dữ liệu hợp lệ
+  CourseService -> CourseRepo: 11. save(course)
+  activate CourseRepo
+  CourseRepo -> DB: 12. INSERT INTO courses\n(name, description, tuition,\nlevel, duration)
+  activate DB
+  DB --> CourseRepo: 13. Course entity
+  deactivate DB
+  CourseRepo --> CourseService: 14. savedCourse
+  deactivate CourseRepo
+
+  CourseService -> CourseService: 15. Ghi Audit Log
+  CourseService --> CourseController: 16. CourseDTO
+  deactivate CourseService
+  CourseController --> CoursePage: 17. 201 Created\n{course info}
+  deactivate CourseController
+  CoursePage -> CoursePage: 18. Refresh danh sách khóa học
+  CoursePage --> Admin: 19. "Thêm khóa học thành công"
+
+else 10a. Dữ liệu không hợp lệ
+  alt 10a1. Tuition <= 0
+    CourseService --> CourseController: 20. Throw InvalidTuitionException
+  else 10a2. Name trống
+    CourseService --> CourseController: 21. Throw EmptyNameException
+  else 10a3. Level không hợp lệ
+    CourseService --> CourseController: 22. Throw InvalidLevelException
+  end
+  CourseService --> CourseController: 23. error
+  deactivate CourseService
+  CourseController --> CoursePage: 24. 400 Bad Request\n{error message}
+  deactivate CourseController
+  CoursePage --> Admin: 25. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: DB Error ==
+
+Admin -> CoursePage: 26. Nhập thông tin hợp lệ
+CoursePage -> CourseController: 27. POST /api/courses
+activate CourseController
+CourseController -> CourseService: 28. createCourse(data)
+activate CourseService
+CourseService -> CourseRepo: 29. save(course)
+activate CourseRepo
+CourseRepo -> DB: 30. INSERT ...
+activate DB
+DB --> CourseRepo: 31. SQL Exception
+deactivate DB
+CourseRepo --> CourseService: 32. Throw DataAccessException
+deactivate CourseRepo
+CourseService --> CourseController: 33. Throw SystemErrorException
+deactivate CourseService
+CourseController --> CoursePage: 34. 500 Internal Server Error
+deactivate CourseController
+CoursePage --> Admin: 35. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml

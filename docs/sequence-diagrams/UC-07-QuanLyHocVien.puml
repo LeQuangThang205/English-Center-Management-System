@@ -1,0 +1,93 @@
+@startuml UC-07-QuanLyHocVien
+!pragma layout smetana
+
+title UC-07: Quản lý học viên (Thêm học viên)
+
+actor        "Admin"                                       as Admin
+boundary     "StudentManagementPage\n(React)"              as StudentPage
+control      "StudentController\n(REST)"                   as StudentController
+control      "StudentService"                              as StudentService
+entity       "UserRepository"                              as UserRepo
+entity       "StudentProfileRepository"                    as StudentProfileRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario ==
+
+Admin -> StudentPage: 1. Chọn "Thêm học viên"
+StudentPage -> StudentPage: 2. Hiển thị form\n(họ tên, email, SĐT,\nngày sinh, địa chỉ)
+Admin -> StudentPage: 3. Nhập thông tin học viên
+Admin -> StudentPage: 4. Click "Lưu"
+StudentPage -> StudentController: 5. POST /api/students\n{fullName, email, phone,\ndob, address}
+activate StudentController
+
+StudentController -> StudentService: 6. createStudent(data)
+activate StudentService
+
+StudentService -> UserRepo: 7. existsByEmail(email)
+activate UserRepo
+UserRepo -> DB: 8. SELECT COUNT(*) FROM users\nWHERE email = ?
+activate DB
+DB --> UserRepo: 9. count
+deactivate DB
+UserRepo --> StudentService: 10. boolean
+deactivate UserRepo
+
+alt 11. Email chưa tồn tại
+  StudentService -> StudentService: 12. Validate email/phone format
+  StudentService -> StudentService: 13. Generate default password
+  StudentService -> UserRepo: 14. save(user)
+  activate UserRepo
+  UserRepo -> DB: 15. INSERT INTO users\n(name, email, password,\nphone, role, status)
+  activate DB
+  DB --> UserRepo: 16. User entity (with ID)
+  deactivate DB
+  UserRepo --> StudentService: 17. savedUser
+  deactivate UserRepo
+
+  StudentService -> StudentProfileRepo: 18. save(profile)
+  activate StudentProfileRepo
+  StudentProfileRepo -> DB: 19. INSERT INTO student_profiles\n(user_id, dob, address,\njoin_date)
+  activate DB
+  DB --> StudentProfileRepo: 20. Profile entity
+  deactivate DB
+  StudentProfileRepo --> StudentService: 21. savedProfile
+  deactivate StudentProfileRepo
+
+  StudentService -> StudentService: 22. Ghi Audit Log
+  StudentService --> StudentController: 23. StudentDTO
+  deactivate StudentService
+  StudentController --> StudentPage: 24. 201 Created\n{student info}
+  deactivate StudentController
+  StudentPage -> StudentPage: 25. Refresh danh sách học viên
+  StudentPage --> Admin: 26. Thông báo\n"Thêm học viên thành công"
+
+else 11a. Email đã tồn tại
+  StudentService --> StudentController: 27. Throw DuplicateEmailException
+  deactivate StudentService
+  StudentController --> StudentPage: 28. 409 Conflict\n"Email đã được sử dụng"
+  deactivate StudentController
+  StudentPage --> Admin: 29. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: DB Error ==
+
+Admin -> StudentPage: 30. Nhập thông tin và lưu
+StudentPage -> StudentController: 31. POST /api/students
+activate StudentController
+StudentController -> StudentService: 32. createStudent(data)
+activate StudentService
+StudentService -> UserRepo: 33. existsByEmail(email)
+activate UserRepo
+UserRepo -> DB: 34. SELECT ...
+activate DB
+DB --> UserRepo: 35. SQL Exception
+deactivate DB
+UserRepo --> StudentService: 36. Throw DataAccessException
+deactivate UserRepo
+StudentService --> StudentController: 37. Throw SystemErrorException
+deactivate StudentService
+StudentController --> StudentPage: 38. 500 Internal Server Error
+deactivate StudentController
+StudentPage --> Admin: 39. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml

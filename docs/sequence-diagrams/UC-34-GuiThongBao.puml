@@ -1,0 +1,140 @@
+@startuml UC-34-GuiThongBao
+!pragma layout smetana
+
+title UC-34: Gửi thông báo
+
+actor        "Admin"                                       as Admin
+boundary     "NotificationPage\n(React)"                   as NotifPage
+control      "NotificationController\n(REST)"              as NotifController
+control      "NotificationService"                         as NotifService
+entity       "NotificationRepository"                      as NotifRepo
+entity       "UserRepository"                              as UserRepo
+database     "MySQL"                                        as DB
+collections  "EmailService\n(Bên thứ ba)"                   as EmailService
+
+== Main Success Scenario ==
+
+Admin -> NotifPage: 1. Chọn "Gửi thông báo"
+NotifPage -> NotifPage: 2. Hiển thị form\n(tiêu đề, nội dung,\nđối tượng nhận)
+Admin -> NotifPage: 3. Nhập tiêu đề & nội dung
+Admin -> NotifPage: 4. Chọn đối tượng\n(Tất cả HV/GV/1 lớp/cá nhân)
+Admin -> NotifPage: 5. Click "Gửi"
+NotifPage -> NotifController: 6. POST /api/notifications\n{title, content, recipients}
+activate NotifController
+
+NotifController -> NotifService: 7. sendNotification(data)
+activate NotifService
+
+NotifService -> NotifService: 8. Validate title not empty
+NotifService -> NotifService: 9. Validate content not empty
+NotifService -> NotifService: 10. Validate recipient list
+
+alt 11. Dữ liệu hợp lệ
+  NotifService -> NotifRepo: 12. save(notification)
+  activate NotifRepo
+  NotifRepo -> DB: 13. INSERT INTO notifications\n(title, content, created_by,\ncreated_at)
+  activate DB
+  DB --> NotifRepo: 14. Notification entity
+  deactivate DB
+  NotifRepo --> NotifService: 15. savedNotification
+  deactivate NotifRepo
+
+  NotifService -> UserRepo: 16. findRecipients(recipientSpec)
+  activate UserRepo
+  UserRepo -> DB: 17. SELECT * FROM users\nWHERE role IN (...) OR class_id = ?
+  activate DB
+  DB --> UserRepo: 18. List<User>
+  deactivate DB
+  UserRepo --> NotifService: 19. recipientList
+  deactivate UserRepo
+
+  NotifService -> NotifRepo: 20. saveAll(notificationRecipients)
+  activate NotifRepo
+  NotifRepo -> DB: 21. INSERT INTO notification_recipients\n(notification_id, user_id, status)
+  activate DB
+  DB --> NotifRepo: 22. success
+  deactivate DB
+  NotifRepo --> NotifService: 23. done
+  deactivate NotifRepo
+
+  NotifService -> EmailService: 24. sendEmail(recipients, title, content)
+  activate EmailService
+  EmailService -> EmailService: 25. Gửi email SMTP
+  alt 26. Email thành công
+    EmailService --> NotifService: 27. success
+    deactivate EmailService
+  else 26a. Email thất bại
+    EmailService --> NotifService: 28. Exception
+    deactivate EmailService
+    NotifService -> NotifService: 29. Ghi log lỗi email\n(không ảnh hưởng chính)
+  end
+
+  NotifService -> NotifService: 30. Ghi Audit Log
+  NotifService --> NotifController: 31. SuccessDTO\n{emailStatus}
+  deactivate NotifService
+  NotifController --> NotifPage: 32. 201 Created\n"Gửi thông báo thành công"
+  deactivate NotifController
+  NotifPage --> Admin: 33. Thông báo thành công\n(kèm trạng thái email)
+
+else 11a. Dữ liệu không hợp lệ
+  alt 11a1. Tiêu đề trống
+    NotifService --> NotifController: 34. Throw EmptyTitleException
+  else 11a2. Nội dung trống
+    NotifService --> NotifController: 35. Throw EmptyContentException
+  else 11a3. Đối tượng không hợp lệ
+    NotifService --> NotifController: 36. Throw InvalidRecipientException
+  end
+  deactivate NotifService
+  NotifController --> NotifPage: 37. 400 Bad Request\n{error message}
+  deactivate NotifController
+  NotifPage --> Admin: 38. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: DB Error ==
+
+Admin -> NotifPage: 39. Nhập thông báo và gửi
+NotifPage -> NotifController: 40. POST /api/notifications
+activate NotifController
+NotifController -> NotifService: 41. sendNotification(data)
+activate NotifService
+NotifService -> NotifRepo: 42. save(notification)
+activate NotifRepo
+NotifRepo -> DB: 43. INSERT ...
+activate DB
+DB --> NotifRepo: 44. SQL Exception
+deactivate DB
+NotifRepo --> NotifService: 45. Throw DataAccessException
+deactivate NotifRepo
+NotifService --> NotifController: 46. Throw SystemErrorException
+deactivate NotifService
+NotifController --> NotifPage: 47. 500 Internal Server Error
+deactivate NotifController
+NotifPage --> Admin: 48. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+== Critical Exception: Email Service Unreachable ==
+
+Admin -> NotifPage: 49. Gửi thông báo
+NotifPage -> NotifController: 50. POST /api/notifications
+activate NotifController
+NotifController -> NotifService: 51. sendNotification(data)
+activate NotifService
+NotifService -> NotifRepo: 52. save + saveAll (thành công)
+activate NotifRepo
+NotifRepo -> DB: 53. INSERT (notification + recipients)
+activate DB
+DB --> NotifRepo: 54. success
+deactivate DB
+NotifRepo --> NotifService: 55. done
+deactivate NotifRepo
+NotifService -> EmailService: 56. sendEmail(recipients, title, content)
+activate EmailService
+EmailService --> NotifService: 57. Connection timeout
+deactivate EmailService
+NotifService -> NotifService: 58. Ghi log lỗi email
+NotifService --> NotifController: 59. SuccessDTO\n{emailStatus: "failed"}
+deactivate NotifService
+NotifController --> NotifPage: 60. 201 Created\n"Gửi thành công.\nEmail gặp sự cố cho một số người nhận."
+deactivate NotifController
+NotifPage --> Admin: 61. Thông báo\n(in-app OK, email failed)
+
+@enduml

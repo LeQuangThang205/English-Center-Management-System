@@ -32,7 +32,11 @@ docs/api/
 
 | Endpoint | Method | Description | Status |
 |----------|--------|-------------|--------|
-| — | — | *No endpoints defined yet.* | — |
+| `/api/payments/init` | POST | Student tạo yêu cầu thanh toán (UC-26) | Draft |
+| `/api/payments/{id}/mark-paid` | PUT | Student báo đã chuyển khoản (UC-26) | Draft |
+| `/api/payments/pending` | GET | Admin xem danh sách chờ xác nhận (UC-26) | Draft |
+| `/api/payments/{id}/confirm` | PUT | Admin xác nhận thanh toán (UC-26) | Draft |
+| `/api/payments/{id}/reject` | PUT | Admin từ chối thanh toán (UC-26) | Draft |
 
 ## References
 

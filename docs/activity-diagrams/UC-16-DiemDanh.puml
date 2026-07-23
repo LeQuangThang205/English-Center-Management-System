@@ -1,0 +1,41 @@
+@startuml UC16_DiemDanh
+' ============================================================
+' UC-16: Điểm danh
+' Main Success: Teacher chọn lớp/ngày → đánh dấu trạng thái → lưu
+' Critical: Lớp không ở trạng thái "Đang học"
+' ============================================================
+
+|Teacher|
+|Hệ thống|
+
+start
+
+:Chọn lớp học;
+:Chọn ngày điểm danh;
+
+|Hệ thống|
+:Kiểm tra lớp ở trạng thái "Đang học"?;
+
+if (Đang học?) then (Không)
+  :Thông báo "Lớp chưa bắt đầu hoặc đã kết thúc";
+  stop
+else (Có)
+  :Kiểm tra đã có điểm danh?;
+  if (Đã có?) then (Có)
+    note right: Chế độ sửa
+  endif
+
+  :Hiển thị danh sách học viên;
+
+  |Teacher|
+  :Đánh dấu trạng thái
+  (Có mặt / Vắng / Vắng có phép);
+  :Gửi kết quả;
+
+  |Hệ thống|
+  :Lưu kết quả điểm danh;
+  :Thông báo thành công;
+  stop
+endif
+
+@enduml

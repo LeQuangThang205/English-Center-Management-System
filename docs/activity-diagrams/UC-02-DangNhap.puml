@@ -1,0 +1,34 @@
+@startuml UC02_DangNhap
+' ============================================================
+' UC-02: Đăng nhập
+' Main Success: Nhập đúng email/mật khẩu → JWT → chuyển hướng
+' Critical: Sai mật khẩu, tài khoản bị khóa
+' ============================================================
+
+|Người dùng|
+|Hệ thống|
+
+start
+
+:Nhập email & mật khẩu;
+:Gửi form đăng nhập;
+
+|Hệ thống|
+:Kiểm tra email & mật khẩu;
+
+if (Hợp lệ?) then (Có)
+  :Tạo JWT token;
+  :Chuyển hướng đến trang chủ theo role;
+  stop
+else (Không)
+  if (Sai quá 5 lần?) then (Có)
+    :Khóa tài khoản 15 phút;
+    :Thông báo lỗi;
+  else (Chưa)
+    :Thông báo "Email hoặc mật khẩu không đúng";
+    :Quay lại nhập;
+  endif
+  stop
+endif
+
+@enduml

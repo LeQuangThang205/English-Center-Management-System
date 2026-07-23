@@ -1,0 +1,44 @@
+@startuml UC09_QuanLyKhoaHoc
+' ============================================================
+' UC-09: Quản lý khóa học
+' Main Success: Admin tạo khóa học mới
+' CRUD: Cập nhật / Xóa → tham chiếu UC-09 spec
+' Critical: Học phí <= 0, xóa khi lớp đang hoạt động
+' ============================================================
+
+|Admin|
+|Hệ thống|
+
+start
+
+:Chọn "Thêm khóa học";
+
+|Hệ thống|
+:Hiển thị form (tên, mô tả, học phí, cấp độ, thời lượng);
+
+|Admin|
+:Nhập thông tin;
+:Gửi form;
+
+|Hệ thống|
+:Kiểm tra tính hợp lệ (học phí > 0, cấp độ hợp lệ);
+
+if (Hợp lệ?) then (Có)
+  :Tạo khóa học;
+  :Ghi Audit Log;
+  :Thông báo thành công;
+  stop
+else (Không)
+  :Thông báo lỗi;
+  :Quay lại nhập;
+  stop
+endif
+
+note right
+  **Các thao tác khác (CRUD):**
+  • Cập nhật: Admin chọn khóa học → sửa → lưu
+  • Xóa: Chỉ xóa được nếu không có lớp đang hoạt động
+  • Tìm kiếm: Nhập từ khóa → lọc danh sách
+end note
+
+@enduml

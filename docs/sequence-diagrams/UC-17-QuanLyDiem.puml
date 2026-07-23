@@ -1,0 +1,114 @@
+@startuml UC-17-QuanLyDiem
+!pragma layout smetana
+
+title UC-17: Quản lý điểm
+
+actor        "Teacher"                                     as Teacher
+boundary     "ScoreManagementPage\n(React)"                as ScorePage
+control      "ScoreController\n(REST)"                     as ScoreController
+control      "ScoreService"                                as ScoreService
+entity       "ClassRepository"                             as ClassRepo
+entity       "ScoreRepository"                             as ScoreRepo
+database     "MySQL"                                        as DB
+
+== Main Success Scenario ==
+
+Teacher -> ScorePage: 1. Chọn lớp học
+ScorePage -> ScoreController: 2. GET /api/scores/init\n?classId=
+activate ScoreController
+
+ScoreController -> ScoreService: 3. prepareScoreTable(classId)
+activate ScoreService
+
+ScoreService -> ClassRepo: 4. findById(classId)
+activate ClassRepo
+ClassRepo -> DB: 5. SELECT * FROM classes\nWHERE id = ?
+activate DB
+DB --> ClassRepo: 6. Class entity
+deactivate DB
+ClassRepo --> ScoreService: 7. Class
+deactivate ClassRepo
+
+alt 8. Class status is "Studying" or "Finished"
+  ScoreService -> ScoreRepo: 9. findByClassId(classId)
+  activate ScoreRepo
+  ScoreRepo -> DB: 10. SELECT s.*, stu.full_name\nFROM scores s\nJOIN students stu\nON s.student_id = stu.id\nWHERE s.class_id = ?
+  activate DB
+  DB --> ScoreRepo: 11. List<Score>
+  deactivate DB
+  ScoreRepo --> ScoreService: 12. scoreList
+  deactivate ScoreRepo
+
+  ScoreService --> ScoreController: 13. ScoreTableDTO\n{scores, students}
+  deactivate ScoreService
+  ScoreController --> ScorePage: 14. 200 OK\n{bảng điểm}
+  deactivate ScoreController
+  ScorePage -> ScorePage: 15. Hiển thị bảng điểm\n(giữa kỳ, cuối kỳ,\ntổng kết, nhận xét)
+
+  Teacher -> ScorePage: 16. Chọn học viên
+  Teacher -> ScorePage: 17. Nhập điểm & nhận xét
+  Teacher -> ScorePage: 18. Click "Lưu"
+  ScorePage -> ScoreController: 19. PUT /api/scores\n{classId, studentId,\nmidterm, final, total,\ncomment}
+  activate ScoreController
+
+  ScoreController -> ScoreService: 20. saveScore(data)
+  activate ScoreService
+
+  ScoreService -> ScoreService: 21. Validate 0 <= score <= 10
+
+  alt 22. Điểm hợp lệ
+    ScoreService -> ScoreRepo: 23. save(score)
+    activate ScoreRepo
+    ScoreRepo -> DB: 24. INSERT INTO scores\n(student_id, class_id, midterm,\nfinal, total, comment)
+    activate DB
+    DB --> ScoreRepo: 25. Score entity
+    deactivate DB
+    ScoreRepo --> ScoreService: 26. savedScore
+    deactivate ScoreRepo
+
+    ScoreService -> ScoreService: 27. Ghi Audit Log
+    ScoreService --> ScoreController: 28. ScoreDTO
+    deactivate ScoreService
+    ScoreController --> ScorePage: 29. 200 OK\n{score info}
+    deactivate ScoreController
+    ScorePage -> ScorePage: 30. Cập nhật bảng điểm
+    ScorePage --> Teacher: 31. "Lưu điểm thành công"
+
+  else 22a. Điểm không hợp lệ
+    ScoreService --> ScoreController: 32. Throw InvalidScoreException
+    deactivate ScoreService
+    ScoreController --> ScorePage: 33. 400 Bad Request\n"Điểm phải từ 0 đến 10"
+    deactivate ScoreController
+    ScorePage --> Teacher: 34. Hiển thị thông báo lỗi
+  end
+
+else 8a. Class chưa bắt đầu
+  ScoreService --> ScoreController: 35. Throw ClassNotStartedException
+  deactivate ScoreService
+  ScoreController --> ScorePage: 36. 400 Bad Request\n"Lớp học chưa bắt đầu"
+  deactivate ScoreController
+  ScorePage --> Teacher: 37. Hiển thị thông báo lỗi
+end
+
+== Critical Exception: DB Error ==
+
+Teacher -> ScorePage: 38. Nhập điểm và lưu
+ScorePage -> ScoreController: 39. PUT /api/scores
+activate ScoreController
+ScoreController -> ScoreService: 40. saveScore(data)
+activate ScoreService
+ScoreService -> ScoreRepo: 41. save(score)
+activate ScoreRepo
+ScoreRepo -> DB: 42. INSERT ...
+activate DB
+DB --> ScoreRepo: 43. SQL Exception
+deactivate DB
+ScoreRepo --> ScoreService: 44. Throw DataAccessException
+deactivate ScoreRepo
+ScoreService --> ScoreController: 45. Throw SystemErrorException
+deactivate ScoreService
+ScoreController --> ScorePage: 46. 500 Internal Server Error
+deactivate ScoreController
+ScorePage --> Teacher: 47. "Hệ thống có lỗi,\nvui lòng thử lại"
+
+@enduml
