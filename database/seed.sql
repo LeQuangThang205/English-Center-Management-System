@@ -1,0 +1,8 @@
+-- ============================================================================
+-- English Center Management System — Data mẫu
+-- MySQL 8.0 Seed Data
+-- Nguồn: Physical Database Design v1.0 (Approved)
+-- ============================================================================
+-- File này chứa dữ liệu mẫu phục vụ phát triển và kiểm thử.
+-- Sẽ được tạo ở bước Seed Data (Phase 3.3.3).
+-- ============================================================================

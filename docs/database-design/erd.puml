@@ -1,0 +1,369 @@
+@startuml
+' ==========================================
+' ERD - English Center Management System
+' Notation: Crow's Foot
+' Source: Domain Model v0.2 (Approved)
+' Phase 3.2 - Database Design
+' 20 Entities | 23 Relationships
+' ==========================================
+
+title ERD - English Center Management System
+caption Domain Model v0.2 | 20 Entities | 23 Relationships
+
+skinparam linetype ortho
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam entity {
+  BackgroundColor #FEFEFE
+  BorderColor #333333
+}
+
+' ==========================================
+' GROUP 1: Authentication & User Management
+' ==========================================
+
+entity "users" as users {
+  +id: BIGINT
+  --
+  *email: VARCHAR(255) [UNIQUE]
+  *password_hash: VARCHAR(255)
+  *full_name: VARCHAR(255)
+  phone: VARCHAR(20)
+  *role: ENUM(ADMIN,TEACHER,STUDENT)
+  *status: ENUM(ACTIVE,INACTIVE) [DEFAULT 'ACTIVE']
+  avatar_url: VARCHAR(500)
+  email_verified_at: DATETIME
+  *failed_attempts: INT [DEFAULT 0]
+  locked_until: DATETIME
+  last_login_at: DATETIME
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+entity "student_profiles" as student_profiles {
+  +#user_id: BIGINT [PK, FK]
+  --
+  date_of_birth: DATE
+  address: TEXT
+  *enrollment_date: DATE
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+entity "teacher_profiles" as teacher_profiles {
+  +#user_id: BIGINT [PK, FK]
+  --
+  *specialization: VARCHAR(255)
+  *hire_date: DATE
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+entity "password_reset_tokens" as password_reset_tokens {
+  +id: BIGINT
+  --
+  #user_id: BIGINT [FK]
+  *token: VARCHAR(255) [UNIQUE]
+  *expires_at: DATETIME
+  used_at: DATETIME
+  *created_at: DATETIME
+}
+
+entity "token_blacklist" as token_blacklist {
+  +id: BIGINT
+  --
+  *token: VARCHAR(500) [INDEXED]
+  *expires_at: DATETIME
+  *created_at: DATETIME
+}
+
+entity "failed_login_attempts" as failed_login_attempts {
+  +id: BIGINT
+  --
+  *email: VARCHAR(255) [INDEXED]
+  *ip_address: VARCHAR(45)
+  *attempted_at: DATETIME
+}
+
+' ==========================================
+' GROUP 2: Course & Class Management
+' ==========================================
+
+entity "courses" as courses {
+  +id: BIGINT
+  --
+  *name: VARCHAR(255)
+  description: TEXT
+  *tuition: DECIMAL(10,2) [CHECK > 0]
+  *level: ENUM(BEGINNER,INTERMEDIATE,ADVANCED)
+  *duration: INT [CHECK > 0]
+  *status: ENUM(ACTIVE,DELETED) [DEFAULT 'ACTIVE']
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+entity "classes" as classes {
+  +id: BIGINT
+  --
+  #course_id: BIGINT [FK]
+  *name: VARCHAR(255)
+  #teacher_id: BIGINT [FK, NULLABLE]
+  *max_capacity: INT [CHECK > 0]
+  *current_headcount: INT [DEFAULT 0]
+  *schedule_day: ENUM(MON,TUE,WED,THU,FRI,SAT,SUN)
+  *start_time: TIME
+  *end_time: TIME [CHECK > start_time]
+  *room: VARCHAR(100)
+  *start_date: DATE
+  *end_date: DATE [CHECK > start_date]
+  *status: ENUM(UPCOMING,STUDYING,FINISHED,CANCELLED) [DEFAULT 'UPCOMING']
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+' ==========================================
+' GROUP 3: Registration & Enrollment
+' ==========================================
+
+entity "registrations" as registrations {
+  +id: BIGINT
+  --
+  #student_id: BIGINT [FK]
+  #class_id: BIGINT [FK]
+  *status: ENUM(PENDING,APPROVED,REJECTED,CANCELLED,PAID) [DEFAULT 'PENDING']
+  *tuition_at_registration: DECIMAL(10,2)
+  *registered_at: DATETIME
+  approved_at: DATETIME
+  #approved_by: BIGINT [FK, NULLABLE]
+  rejected_at: DATETIME
+  #rejected_by: BIGINT [FK, NULLABLE]
+  rejection_reason: TEXT
+  paid_at: DATETIME
+  *created_at: DATETIME
+  *updated_at: DATETIME
+  __
+  UNIQUE(student_id, class_id)
+}
+
+' ==========================================
+' GROUP 4: Payment
+' ==========================================
+
+entity "transactions" as transactions {
+  +id: BIGINT
+  --
+  #registration_id: BIGINT [FK]
+  *amount: DECIMAL(10,2)
+  *payment_method: ENUM(BANK_TRANSFER) [DEFAULT 'BANK_TRANSFER']
+  *transaction_code: VARCHAR(100) [UNIQUE]
+  *status: ENUM(PENDING_CONFIRMATION,SUCCESS,FAILED) [DEFAULT 'PENDING_CONFIRMATION']
+  *created_at: DATETIME
+  paid_at: DATETIME
+  confirmed_at: DATETIME
+  #confirmed_by: BIGINT [FK, NULLABLE]
+  *updated_at: DATETIME
+}
+
+' ==========================================
+' GROUP 5: Attendance
+' ==========================================
+
+entity "attendance_sheets" as attendance_sheets {
+  +id: BIGINT
+  --
+  #class_id: BIGINT [FK]
+  *date: DATE
+  #created_by: BIGINT [FK]
+  *created_at: DATETIME
+  *updated_at: DATETIME
+  __
+  UNIQUE(class_id, date)
+}
+
+entity "attendance_records" as attendance_records {
+  +id: BIGINT
+  --
+  #sheet_id: BIGINT [FK]
+  #student_id: BIGINT [FK]
+  *status: ENUM(PRESENT,ABSENT,EXCUSED)
+  *created_at: DATETIME
+  __
+  UNIQUE(sheet_id, student_id)
+}
+
+' ==========================================
+' GROUP 6: Score Management
+' ==========================================
+
+entity "scores" as scores {
+  +id: BIGINT
+  --
+  #student_id: BIGINT [FK]
+  #class_id: BIGINT [FK]
+  midterm_score: DECIMAL(4,1) [CHECK 0-10]
+  final_score: DECIMAL(4,1) [CHECK 0-10]
+  total_score: DECIMAL(4,1) [CHECK 0-10]
+  comment: TEXT
+  #created_by: BIGINT [FK]
+  *created_at: DATETIME
+  *updated_at: DATETIME
+  __
+  UNIQUE(student_id, class_id)
+}
+
+' ==========================================
+' GROUP 7: Notifications
+' ==========================================
+
+entity "notifications" as notifications {
+  +id: BIGINT
+  --
+  *title: VARCHAR(255)
+  *content: TEXT
+  *target_type: ENUM(ALL_STUDENTS,ALL_TEACHERS,SPECIFIC_CLASS,SPECIFIC_USER)
+  target_id: BIGINT
+  attachment_url: VARCHAR(500)
+  #created_by: BIGINT [FK]
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+entity "notification_recipients" as notification_recipients {
+  +id: BIGINT
+  --
+  #notification_id: BIGINT [FK]
+  #user_id: BIGINT [FK]
+  *is_read: BOOLEAN [DEFAULT FALSE]
+  read_at: DATETIME
+  __
+  UNIQUE(notification_id, user_id)
+}
+
+' ==========================================
+' GROUP 8: AI & Chat
+' ==========================================
+
+entity "chat_conversations" as chat_conversations {
+  +id: BIGINT
+  --
+  #user_id: BIGINT [FK, NULLABLE]
+  *type: ENUM(CHATBOT,ASSISTANT)
+  title: VARCHAR(255)
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+entity "chat_messages" as chat_messages {
+  +id: BIGINT
+  --
+  #conversation_id: BIGINT [FK]
+  *sequence_number: INT
+  *question: TEXT
+  *response: TEXT
+  *created_at: DATETIME
+  __
+  UNIQUE(conversation_id, sequence_number)
+}
+
+entity "faqs" as faqs {
+  +id: BIGINT
+  --
+  *question: VARCHAR(500) [UNIQUE]
+  *answer: TEXT
+  category: VARCHAR(100)
+  tags: JSON
+  *status: ENUM(VISIBLE,HIDDEN) [DEFAULT 'VISIBLE']
+  #created_by: BIGINT [FK]
+  *created_at: DATETIME
+  *updated_at: DATETIME
+}
+
+' ==========================================
+' GROUP 9: System & Audit
+' ==========================================
+
+entity "audit_logs" as audit_logs {
+  +id: BIGINT
+  --
+  #actor_id: BIGINT [FK, NULLABLE]
+  *action: ENUM(CREATE,UPDATE,DELETE,APPROVE,REJECT,PAYMENT,LOGIN,LOGOUT)
+  *entity_type: VARCHAR(100)
+  entity_id: BIGINT
+  old_value: JSON
+  new_value: JSON
+  ip_address: VARCHAR(45)
+  user_agent: TEXT
+  *created_at: DATETIME
+}
+
+entity "system_settings" as system_settings {
+  +key: VARCHAR(100)
+  --
+  *value: TEXT
+  description: TEXT
+  *group: ENUM(CENTER_INFO,TUITION,EMAIL,SECURITY)
+  *updated_at: DATETIME
+}
+
+' ==========================================
+' RELATIONSHIPS (23 lines)
+' ==========================================
+
+' --- R01-R04: Authentication & User ---
+users ||--|o student_profiles : "R01: has profile (1:1)"
+users ||--|o teacher_profiles   : "R02: has profile (1:1)"
+users ||--o{ password_reset_tokens : "R03: reset tokens"
+users ||..o{ failed_login_attempts : "R04: failed logins (logical)"
+
+' --- R05-R07: Course & Class ---
+courses ||--o{ classes : "R05: contains classes"
+users |o--o{ classes   : "R06: assigned teacher"
+users }o..o{ classes   : "R07: registers/attends (N:N)"
+
+' --- R08-R10: Registration ---
+users ||--o{ registrations : "R08: student registrations"
+classes ||--o{ registrations : "R09: class registrations"
+users |o--o{ registrations : "R10: admin approves/rejects"
+
+' --- R11-R12: Payment ---
+registrations ||--o{ transactions : "R11: has payments"
+users |o--o{ transactions : "R12: admin confirms"
+
+' --- R13-R15: Attendance ---
+classes ||--o{ attendance_sheets : "R13: has sheets"
+attendance_sheets ||--|{ attendance_records : "R14: contains records"
+users ||--o{ attendance_records : "R15: student records"
+
+' --- R16-R17: Score ---
+users ||--o{ scores : "R16: student scores"
+classes ||--o{ scores : "R17: class scores"
+
+' --- R18-R20: Notification ---
+users ||--o{ notifications : "R18: admin creates"
+notifications ||--|{ notification_recipients : "R19: has recipients"
+users ||--o{ notification_recipients : "R20: receives"
+
+' --- R21-R22: AI & Chat ---
+users |o--o{ chat_conversations : "R21: has conversations"
+chat_conversations ||--|{ chat_messages : "R22: contains messages"
+
+' --- R23: Audit ---
+users |o--o{ audit_logs : "R23: actor logs"
+
+' ==========================================
+' LEGEND
+' ==========================================
+
+legend right
+|<#lightblue> **Notation** || **Meaning** |
+| 1 — N          || One to Many |
+| 1 — 1          || One to One |
+| N — N          || Many to Many |
+|<#lightyellow> **Feature** || **Entity** |
+| <<Soft Delete>>|| users, courses, classes |
+| Audit Log      || Read-only, never deleted |
+| Retry Payment  || transactions (1:N per registration) |
+| No FK          || failed_login_attempts (logical) |
+endlegend
+
+@enduml
