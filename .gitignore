@@ -12,6 +12,12 @@ out/
 .cache/
 .turbo/
 
+# Gradle cache
+backend/.gradle/
+
+# Eclipse/IDE compiled output
+backend/bin/
+
 # Environment files
 .env
 .env.local

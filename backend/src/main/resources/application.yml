@@ -18,3 +18,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  jwt:
+    secret: "english-center-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm-2026"
+    expiration: 86400000
