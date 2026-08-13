@@ -95,7 +95,9 @@ Không tự triển khai:
 
 ## Next step when project resumes
 
-**Notification module** — bảng `notifications` + `notification_recipients` (UC-22…27, module `thong-bao-giam-sat`).
+**Notification module** — bảng `notifications` + `notification_recipients`:
+- UC-34 Gửi thông báo
+- UC-38 Xem thông báo
 
 **Nhưng CHƯA triển khai bây giờ.**
 
