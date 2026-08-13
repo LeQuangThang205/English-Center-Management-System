@@ -469,4 +469,54 @@ class NotificationServiceTest {
         });
         verify(notificationRecipientRepository, times(1)).saveAll(any());
     }
+
+    @Test
+    @DisplayName("delete() — notification thuộc currentUser: gọi deleteByNotification_IdAndUser_Id, không throw")
+    void deleteBelongingToCurrentUser() {
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(5L, 3L))
+                .thenReturn(Optional.of(recipient(1L, 5L, LocalDateTime.now().minusHours(1), false)));
+
+        notificationService.delete(5L, activeStudent);
+
+        verify(notificationRecipientRepository).findByNotification_IdAndUser_Id(5L, 3L);
+        verify(notificationRecipientRepository).deleteByNotification_IdAndUser_Id(5L, 3L);
+    }
+
+    @Test
+    @DisplayName("delete() — notification không tồn tại: throw ResourceNotFoundException, never delete")
+    void deleteNotificationNotFound() {
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(99L, 3L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.delete(99L, activeStudent))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(notificationRecipientRepository).findByNotification_IdAndUser_Id(99L, 3L);
+        verify(notificationRecipientRepository, never()).deleteByNotification_IdAndUser_Id(99L, 3L);
+    }
+
+    @Test
+    @DisplayName("delete() — notification thuộc user khác: throw ResourceNotFoundException, không leak")
+    void deleteNotificationOfAnotherUser() {
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(5L, 3L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.delete(5L, activeStudent))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("5");
+        verify(notificationRecipientRepository, never()).deleteByNotification_IdAndUser_Id(any(), any());
+    }
+
+    @Test
+    @DisplayName("delete() — truyền đúng notificationId + currentUser.getId() vào repository")
+    void deleteUsesCorrectIds() {
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(5L, 3L))
+                .thenReturn(Optional.of(recipient(1L, 5L, LocalDateTime.now().minusHours(1), false)));
+
+        notificationService.delete(5L, activeStudent);
+
+        verify(notificationRecipientRepository).findByNotification_IdAndUser_Id(5L, 3L);
+        verify(notificationRecipientRepository).deleteByNotification_IdAndUser_Id(5L, 3L);
+        verify(notificationRecipientRepository, never())
+                .deleteByNotification_IdAndUser_Id(any(), eq(activeStudent.getId() + 1L));
+    }
 }

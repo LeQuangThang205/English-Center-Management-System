@@ -176,7 +176,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
     public void delete(Long notificationId, User currentUser) {
-        throw new UnsupportedOperationException("Not implemented");
+        notificationRecipientRepository
+                .findByNotification_IdAndUser_Id(notificationId, currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Notification", notificationId));
+        notificationRecipientRepository.deleteByNotification_IdAndUser_Id(notificationId, currentUser.getId());
     }
 }
