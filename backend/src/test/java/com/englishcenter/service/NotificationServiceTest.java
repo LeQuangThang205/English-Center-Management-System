@@ -11,6 +11,7 @@ import com.englishcenter.entity.enums.RegistrationStatus;
 import com.englishcenter.entity.enums.Role;
 import com.englishcenter.entity.enums.UserStatus;
 import com.englishcenter.exception.BusinessException;
+import com.englishcenter.exception.ResourceNotFoundException;
 import com.englishcenter.repository.NotificationRecipientRepository;
 import com.englishcenter.repository.NotificationRepository;
 import com.englishcenter.service.impl.NotificationServiceImpl;
@@ -25,6 +26,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -325,5 +327,47 @@ class NotificationServiceTest {
         verify(notificationRecipientRepository).findByUser_IdAndIsReadFalse(3L);
         verify(notificationRecipientRepository, never())
                 .findByUser_IdOrderByNotification_CreatedAtDesc(activeStudent.getId() + 1L);
+    }
+
+    @Test
+    @DisplayName("findDetail() — recipient chưa đọc: đánh dấu isRead=true, set readAt, và save")
+    void findDetailMarksAsReadWhenUnread() {
+        NotificationRecipient unread = recipient(1L, 5L, LocalDateTime.now().minusHours(1), false);
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(5L, 3L))
+                .thenReturn(Optional.of(unread));
+
+        NotificationRecipient result = notificationService.findDetail(5L, activeStudent);
+
+        assertThat(result.getIsRead()).isTrue();
+        assertThat(result.getReadAt()).isNotNull();
+        verify(notificationRecipientRepository).findByNotification_IdAndUser_Id(5L, 3L);
+        verify(notificationRecipientRepository).save(unread);
+    }
+
+    @Test
+    @DisplayName("findDetail() — recipient đã đọc: trả recipient, không thay đổi readAt, không save")
+    void findDetailAlreadyReadDoesNotChangeReadAt() {
+        LocalDateTime readAt = LocalDateTime.now().minusDays(1);
+        NotificationRecipient read = recipient(2L, 6L, LocalDateTime.now().minusHours(2), true);
+        read.setReadAt(readAt);
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(6L, 3L))
+                .thenReturn(Optional.of(read));
+
+        NotificationRecipient result = notificationService.findDetail(6L, activeStudent);
+
+        assertThat(result.getReadAt()).isEqualTo(readAt);
+        assertThat(result.getIsRead()).isTrue();
+        verify(notificationRecipientRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("findDetail() — notification không thuộc user hiện tại ném ResourceNotFoundException")
+    void findDetailNotBelongingToUser() {
+        when(notificationRecipientRepository.findByNotification_IdAndUser_Id(99L, 3L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.findDetail(99L, activeStudent))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(notificationRecipientRepository, never()).save(any());
     }
 }

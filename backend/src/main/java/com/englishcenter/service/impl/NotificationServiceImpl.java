@@ -11,6 +11,7 @@ import com.englishcenter.entity.enums.RegistrationStatus;
 import com.englishcenter.entity.enums.Role;
 import com.englishcenter.entity.enums.UserStatus;
 import com.englishcenter.exception.BusinessException;
+import com.englishcenter.exception.ResourceNotFoundException;
 import com.englishcenter.repository.NotificationRecipientRepository;
 import com.englishcenter.repository.NotificationRepository;
 import com.englishcenter.service.CourseClassService;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -138,8 +140,17 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
     public NotificationRecipient findDetail(Long notificationId, User currentUser) {
-        throw new UnsupportedOperationException("Not implemented");
+        NotificationRecipient recipient = notificationRecipientRepository
+                .findByNotification_IdAndUser_Id(notificationId, currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Notification", notificationId));
+        if (!recipient.getIsRead()) {
+            recipient.setIsRead(true);
+            recipient.setReadAt(LocalDateTime.now());
+            notificationRecipientRepository.save(recipient);
+        }
+        return recipient;
     }
 
     @Override
