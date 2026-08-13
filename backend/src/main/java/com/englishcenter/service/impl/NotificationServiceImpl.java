@@ -159,8 +159,20 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
     public int markAllAsRead(User currentUser) {
-        throw new UnsupportedOperationException("Not implemented");
+        List<NotificationRecipient> unread = notificationRecipientRepository
+                .findByUser_IdAndIsReadFalse(currentUser.getId());
+        if (unread.isEmpty()) {
+            return 0;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        unread.forEach(recipient -> {
+            recipient.setIsRead(true);
+            recipient.setReadAt(now);
+        });
+        notificationRecipientRepository.saveAll(unread);
+        return unread.size();
     }
 
     @Override

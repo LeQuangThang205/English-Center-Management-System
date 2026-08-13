@@ -407,4 +407,66 @@ class NotificationServiceTest {
 
         assertThat(notificationService.countUnread(activeStudent)).isEqualTo(7L);
     }
+
+    @Test
+    @DisplayName("markAllAsRead() — 3 notification chưa đọc: trả 3, cả 3 isRead=true và readAt khác null")
+    void markAllAsReadUpdatesAllUnread() {
+        NotificationRecipient r1 = recipient(1L, 1L, LocalDateTime.now().minusDays(3), false);
+        NotificationRecipient r2 = recipient(2L, 2L, LocalDateTime.now().minusDays(2), false);
+        NotificationRecipient r3 = recipient(3L, 3L, LocalDateTime.now().minusDays(1), false);
+        when(notificationRecipientRepository.findByUser_IdAndIsReadFalse(3L))
+                .thenReturn(List.of(r1, r2, r3));
+
+        int marked = notificationService.markAllAsRead(activeStudent);
+
+        assertThat(marked).isEqualTo(3);
+        assertThat(r1.getIsRead()).isTrue();
+        assertThat(r2.getIsRead()).isTrue();
+        assertThat(r3.getIsRead()).isTrue();
+        assertThat(r1.getReadAt()).isNotNull();
+        assertThat(r2.getReadAt()).isNotNull();
+        assertThat(r3.getReadAt()).isNotNull();
+        verify(notificationRecipientRepository).findByUser_IdAndIsReadFalse(3L);
+        verify(notificationRecipientRepository, times(1)).saveAll(List.of(r1, r2, r3));
+    }
+
+    @Test
+    @DisplayName("markAllAsRead() — không có notification chưa đọc: trả 0 và never saveAll")
+    void markAllAsReadNoUnread() {
+        when(notificationRecipientRepository.findByUser_IdAndIsReadFalse(3L)).thenReturn(List.of());
+
+        assertThat(notificationService.markAllAsRead(activeStudent)).isZero();
+        verify(notificationRecipientRepository).findByUser_IdAndIsReadFalse(3L);
+        verify(notificationRecipientRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("markAllAsRead() — repository được gọi với đúng userId của currentUser")
+    void markAllAsReadUsesCurrentUserId() {
+        when(notificationRecipientRepository.findByUser_IdAndIsReadFalse(3L)).thenReturn(List.of());
+
+        notificationService.markAllAsRead(activeStudent);
+
+        verify(notificationRecipientRepository).findByUser_IdAndIsReadFalse(3L);
+        verify(notificationRecipientRepository, never()).findByUser_IdAndIsReadFalse(activeStudent.getId() + 1L);
+    }
+
+    @Test
+    @DisplayName("markAllAsRead() — mọi recipient trong danh sách đều được cập nhật và saveAll đúng 1 lần")
+    void markAllAsReadUpdatesEveryRecipientAndSavesOnce() {
+        List<NotificationRecipient> unread = List.of(
+                recipient(1L, 1L, LocalDateTime.now().minusDays(3), false),
+                recipient(2L, 2L, LocalDateTime.now().minusDays(2), false),
+                recipient(3L, 3L, LocalDateTime.now().minusDays(1), false),
+                recipient(4L, 4L, LocalDateTime.now().minusHours(1), false));
+        when(notificationRecipientRepository.findByUser_IdAndIsReadFalse(3L)).thenReturn(unread);
+
+        notificationService.markAllAsRead(activeStudent);
+
+        assertThat(unread).allSatisfy(r -> {
+            assertThat(r.getIsRead()).isTrue();
+            assertThat(r.getReadAt()).isNotNull();
+        });
+        verify(notificationRecipientRepository, times(1)).saveAll(any());
+    }
 }
