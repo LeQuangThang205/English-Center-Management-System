@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -253,5 +254,76 @@ class NotificationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("targetId");
         verify(notificationRepository, never()).save(any());
+    }
+
+    private NotificationRecipient recipient(Long id, Long notificationId, LocalDateTime createdAt, boolean read) {
+        Notification notification = Notification.builder()
+                .id(notificationId)
+                .title("Thong bao " + notificationId)
+                .content("Noi dung " + notificationId)
+                .targetType(NotificationTargetType.ALL_STUDENTS)
+                .createdAt(createdAt)
+                .build();
+        return NotificationRecipient.builder()
+                .id(id)
+                .notification(notification)
+                .user(activeStudent)
+                .isRead(read)
+                .build();
+    }
+
+    @Test
+    @DisplayName("findAll() — trả đúng danh sách recipient mới nhất trước (user hiện tại)")
+    void findAllReturnsNewestFirst() {
+        LocalDateTime now = LocalDateTime.now();
+        NotificationRecipient newest = recipient(1L, 3L, now.minusHours(1), true);
+        NotificationRecipient older = recipient(2L, 2L, now.minusDays(1), false);
+        NotificationRecipient oldest = recipient(3L, 1L, now.minusDays(2), true);
+        when(notificationRecipientRepository.findByUser_IdOrderByNotification_CreatedAtDesc(3L))
+                .thenReturn(List.of(newest, older, oldest));
+
+        List<NotificationRecipient> result = notificationService.findAll(activeStudent);
+
+        assertThat(result).hasSize(3);
+        assertThat(result).containsExactly(newest, older, oldest);
+        verify(notificationRecipientRepository).findByUser_IdOrderByNotification_CreatedAtDesc(3L);
+    }
+
+    @Test
+    @DisplayName("findUnread() — chỉ trả các notification chưa đọc (isRead = false)")
+    void findUnreadReturnsOnlyUnread() {
+        NotificationRecipient unread = recipient(1L, 3L, LocalDateTime.now().minusHours(1), false);
+        when(notificationRecipientRepository.findByUser_IdAndIsReadFalse(3L))
+                .thenReturn(List.of(unread));
+
+        List<NotificationRecipient> result = notificationService.findUnread(activeStudent);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getIsRead()).isFalse();
+        verify(notificationRecipientRepository).findByUser_IdAndIsReadFalse(3L);
+    }
+
+    @Test
+    @DisplayName("findAll()/findUnread() — không có notification trả về empty list")
+    void findAllAndUnreadEmpty() {
+        when(notificationRecipientRepository.findByUser_IdOrderByNotification_CreatedAtDesc(3L))
+                .thenReturn(List.of());
+        when(notificationRecipientRepository.findByUser_IdAndIsReadFalse(3L))
+                .thenReturn(List.of());
+
+        assertThat(notificationService.findAll(activeStudent)).isEmpty();
+        assertThat(notificationService.findUnread(activeStudent)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("findAll()/findUnread() — repository luôn được gọi với đúng userId của currentUser")
+    void findAllAndUnreadUseCurrentUserId() {
+        notificationService.findAll(activeStudent);
+        notificationService.findUnread(activeStudent);
+
+        verify(notificationRecipientRepository).findByUser_IdOrderByNotification_CreatedAtDesc(3L);
+        verify(notificationRecipientRepository).findByUser_IdAndIsReadFalse(3L);
+        verify(notificationRecipientRepository, never())
+                .findByUser_IdOrderByNotification_CreatedAtDesc(activeStudent.getId() + 1L);
     }
 }

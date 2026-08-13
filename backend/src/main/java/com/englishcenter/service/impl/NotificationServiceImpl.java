@@ -129,12 +129,12 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public List<NotificationRecipient> findAll(User currentUser) {
-        throw new UnsupportedOperationException("Not implemented");
+        return notificationRecipientRepository.findByUser_IdOrderByNotification_CreatedAtDesc(currentUser.getId());
     }
 
     @Override
     public List<NotificationRecipient> findUnread(User currentUser) {
-        throw new UnsupportedOperationException("Not implemented");
+        return notificationRecipientRepository.findByUser_IdAndIsReadFalse(currentUser.getId());
     }
 
     @Override
