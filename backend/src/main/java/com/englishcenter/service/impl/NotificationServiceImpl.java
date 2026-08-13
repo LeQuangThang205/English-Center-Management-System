@@ -155,7 +155,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public long countUnread(User currentUser) {
-        throw new UnsupportedOperationException("Not implemented");
+        return notificationRecipientRepository.countByUser_IdAndIsReadFalse(currentUser.getId());
     }
 
     @Override

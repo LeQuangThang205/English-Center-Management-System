@@ -370,4 +370,41 @@ class NotificationServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(notificationRecipientRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("countUnread() — user có 3 notification chưa đọc trả về 3")
+    void countUnreadReturnsThree() {
+        when(notificationRecipientRepository.countByUser_IdAndIsReadFalse(3L)).thenReturn(3L);
+
+        assertThat(notificationService.countUnread(activeStudent)).isEqualTo(3L);
+        verify(notificationRecipientRepository).countByUser_IdAndIsReadFalse(3L);
+    }
+
+    @Test
+    @DisplayName("countUnread() — user không có notification chưa đọc trả về 0")
+    void countUnreadZero() {
+        when(notificationRecipientRepository.countByUser_IdAndIsReadFalse(3L)).thenReturn(0L);
+
+        assertThat(notificationService.countUnread(activeStudent)).isZero();
+        verify(notificationRecipientRepository).countByUser_IdAndIsReadFalse(3L);
+    }
+
+    @Test
+    @DisplayName("countUnread() — repository được gọi với đúng userId của currentUser")
+    void countUnreadUsesCurrentUserId() {
+        when(notificationRecipientRepository.countByUser_IdAndIsReadFalse(3L)).thenReturn(0L);
+
+        notificationService.countUnread(activeStudent);
+
+        verify(notificationRecipientRepository).countByUser_IdAndIsReadFalse(3L);
+        verify(notificationRecipientRepository, never()).countByUser_IdAndIsReadFalse(activeStudent.getId() + 1L);
+    }
+
+    @Test
+    @DisplayName("countUnread() — service trả nguyên giá trị repository trả về")
+    void countUnreadReturnsRepositoryValue() {
+        when(notificationRecipientRepository.countByUser_IdAndIsReadFalse(3L)).thenReturn(7L);
+
+        assertThat(notificationService.countUnread(activeStudent)).isEqualTo(7L);
+    }
 }
