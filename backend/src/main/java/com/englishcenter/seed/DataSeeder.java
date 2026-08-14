@@ -2,17 +2,23 @@ package com.englishcenter.seed;
 
 import com.englishcenter.entity.Course;
 import com.englishcenter.entity.CourseClass;
+import com.englishcenter.entity.Registration;
 import com.englishcenter.entity.StudentProfile;
+import com.englishcenter.entity.Transaction;
 import com.englishcenter.entity.User;
 import com.englishcenter.entity.enums.ClassStatus;
 import com.englishcenter.entity.enums.CourseLevel;
 import com.englishcenter.entity.enums.CourseStatus;
+import com.englishcenter.entity.enums.RegistrationStatus;
 import com.englishcenter.entity.enums.Role;
 import com.englishcenter.entity.enums.ScheduleDay;
+import com.englishcenter.entity.enums.TransactionStatus;
 import com.englishcenter.entity.enums.UserStatus;
 import com.englishcenter.repository.CourseClassRepository;
 import com.englishcenter.repository.CourseRepository;
+import com.englishcenter.repository.RegistrationRepository;
 import com.englishcenter.repository.StudentProfileRepository;
+import com.englishcenter.repository.TransactionRepository;
 import com.englishcenter.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Component
@@ -41,7 +48,11 @@ public class DataSeeder implements CommandLineRunner {
     private final StudentProfileRepository studentProfileRepository;
     private final CourseRepository courseRepository;
     private final CourseClassRepository courseClassRepository;
+    private final RegistrationRepository registrationRepository;
+    private final TransactionRepository transactionRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private int transactionSequence = 0;
 
     @Override
     @Transactional
@@ -53,6 +64,7 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Starting seed data generation");
         seedUsersAndProfiles();
         seedCoursesAndClasses();
+        seedRegistrationsAndTransactions();
         log.info("Finished seed data generation");
     }
 
@@ -111,6 +123,103 @@ public class DataSeeder implements CommandLineRunner {
         seedClass("Advanced Class B", advanced, teacher2, ClassStatus.CANCELLED, 15, 0,
                 ScheduleDay.FRI, LocalTime.of(19, 0), LocalTime.of(21, 0), "Room 302",
                 now.minusMonths(2), now.plusMonths(2));
+    }
+
+    private void seedRegistrationsAndTransactions() {
+        User admin = userRepository.findByEmail(SEED_ADMIN_EMAIL).orElseThrow();
+
+        User student1 = findUser("student1@example.com");
+        User student2 = findUser("student2@example.com");
+        User student3 = findUser("student3@example.com");
+        User student4 = findUser("student4@example.com");
+        User student5 = findUser("student5@example.com");
+
+        CourseClass beginnerA = findClassByName("Beginner Class A");
+        CourseClass beginnerB = findClassByName("Beginner Class B");
+        CourseClass intermediateA = findClassByName("Intermediate Class A");
+        CourseClass advancedA = findClassByName("Advanced Class A");
+
+        Registration r1 = seedRegistration(student1, beginnerB, RegistrationStatus.APPROVED, admin);
+        Registration r2 = seedRegistration(student2, beginnerB, RegistrationStatus.APPROVED, admin);
+        Registration r3 = seedRegistration(student3, beginnerB, RegistrationStatus.PAID, admin);
+        seedRegistration(student3, intermediateA, RegistrationStatus.APPROVED, admin);
+        Registration r5 = seedRegistration(student4, intermediateA, RegistrationStatus.PAID, admin);
+        Registration r6 = seedRegistration(student5, intermediateA, RegistrationStatus.APPROVED, admin);
+        seedRegistration(student1, beginnerA, RegistrationStatus.PENDING, admin);
+        seedRegistration(student2, beginnerA, RegistrationStatus.PENDING, admin);
+        seedRegistration(student5, advancedA, RegistrationStatus.REJECTED, admin);
+
+        seedTransaction(r1, TransactionStatus.FAILED, admin);
+        seedTransaction(r2, TransactionStatus.PENDING_CONFIRMATION, admin);
+        seedTransaction(r3, TransactionStatus.SUCCESS, admin);
+        seedTransaction(r5, TransactionStatus.SUCCESS, admin);
+        seedTransaction(r6, TransactionStatus.PENDING_CONFIRMATION, admin);
+    }
+
+    private Registration seedRegistration(User student, CourseClass courseClass,
+                                          RegistrationStatus status, User admin) {
+        LocalDateTime now = LocalDateTime.now();
+        Registration.RegistrationBuilder builder = Registration.builder()
+                .student(student)
+                .courseClass(courseClass)
+                .status(status)
+                .tuitionAtRegistration(courseClass.getCourse().getTuition())
+                .registeredAt(now);
+        switch (status) {
+            case APPROVED -> {
+                builder.approvedAt(now);
+                builder.approvedBy(admin);
+            }
+            case PAID -> {
+                builder.approvedAt(now);
+                builder.approvedBy(admin);
+                builder.paidAt(now);
+            }
+            case REJECTED -> {
+                builder.rejectedAt(now);
+                builder.rejectedBy(admin);
+                builder.rejectionReason("Class is full");
+            }
+            default -> {
+            }
+        }
+        return registrationRepository.save(builder.build());
+    }
+
+    private void seedTransaction(Registration registration, TransactionStatus status, User admin) {
+        LocalDateTime now = LocalDateTime.now();
+        Transaction.TransactionBuilder builder = Transaction.builder()
+                .registration(registration)
+                .amount(registration.getTuitionAtRegistration())
+                .transactionCode(nextTransactionCode())
+                .status(status);
+        switch (status) {
+            case SUCCESS -> {
+                builder.paidAt(now);
+                builder.confirmedAt(now);
+                builder.confirmedBy(admin);
+            }
+            case PENDING_CONFIRMATION -> builder.paidAt(now);
+            case FAILED -> {
+            }
+        }
+        transactionRepository.save(builder.build());
+    }
+
+    private User findUser(String email) {
+        return userRepository.findByEmail(email).orElseThrow();
+    }
+
+    private CourseClass findClassByName(String name) {
+        return courseClassRepository.findAll().stream()
+                .filter(courseClass -> courseClass.getName().equals(name))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private String nextTransactionCode() {
+        transactionSequence++;
+        return "TXN-" + String.format("%06d", transactionSequence);
     }
 
     private User seedUser(String email, String fullName, Role role, UserStatus status, String phone) {
