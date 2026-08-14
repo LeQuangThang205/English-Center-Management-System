@@ -1,11 +1,15 @@
 package com.englishcenter.seed;
 
+import com.englishcenter.entity.AttendanceRecord;
+import com.englishcenter.entity.AttendanceSheet;
 import com.englishcenter.entity.Course;
 import com.englishcenter.entity.CourseClass;
 import com.englishcenter.entity.Registration;
+import com.englishcenter.entity.Score;
 import com.englishcenter.entity.StudentProfile;
 import com.englishcenter.entity.Transaction;
 import com.englishcenter.entity.User;
+import com.englishcenter.entity.enums.AttendanceStatus;
 import com.englishcenter.entity.enums.ClassStatus;
 import com.englishcenter.entity.enums.CourseLevel;
 import com.englishcenter.entity.enums.CourseStatus;
@@ -14,9 +18,11 @@ import com.englishcenter.entity.enums.Role;
 import com.englishcenter.entity.enums.ScheduleDay;
 import com.englishcenter.entity.enums.TransactionStatus;
 import com.englishcenter.entity.enums.UserStatus;
+import com.englishcenter.repository.AttendanceSheetRepository;
 import com.englishcenter.repository.CourseClassRepository;
 import com.englishcenter.repository.CourseRepository;
 import com.englishcenter.repository.RegistrationRepository;
+import com.englishcenter.repository.ScoreRepository;
 import com.englishcenter.repository.StudentProfileRepository;
 import com.englishcenter.repository.TransactionRepository;
 import com.englishcenter.repository.UserRepository;
@@ -29,9 +35,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Component
 @Profile("seed")
@@ -50,6 +58,8 @@ public class DataSeeder implements CommandLineRunner {
     private final CourseClassRepository courseClassRepository;
     private final RegistrationRepository registrationRepository;
     private final TransactionRepository transactionRepository;
+    private final AttendanceSheetRepository attendanceSheetRepository;
+    private final ScoreRepository scoreRepository;
     private final PasswordEncoder passwordEncoder;
 
     private int transactionSequence = 0;
@@ -65,6 +75,7 @@ public class DataSeeder implements CommandLineRunner {
         seedUsersAndProfiles();
         seedCoursesAndClasses();
         seedRegistrationsAndTransactions();
+        seedAttendanceAndScores();
         log.info("Finished seed data generation");
     }
 
@@ -156,6 +167,52 @@ public class DataSeeder implements CommandLineRunner {
         seedTransaction(r6, TransactionStatus.PENDING_CONFIRMATION, admin);
     }
 
+    private void seedAttendanceAndScores() {
+        User teacher1 = userRepository.findByEmail(TEACHER1_EMAIL).orElseThrow();
+        User teacher2 = userRepository.findByEmail(TEACHER2_EMAIL).orElseThrow();
+
+        User student1 = findUser("student1@example.com");
+        User student2 = findUser("student2@example.com");
+        User student3 = findUser("student3@example.com");
+        User student4 = findUser("student4@example.com");
+        User student5 = findUser("student5@example.com");
+
+        CourseClass beginnerB = findClassByName("Beginner Class B");
+        CourseClass intermediateA = findClassByName("Intermediate Class A");
+
+        LocalDate today = LocalDate.now();
+
+        seedAttendanceSheet(beginnerB, teacher2, today.minusDays(7), List.of(
+                new StudentAttendance(student1, AttendanceStatus.PRESENT),
+                new StudentAttendance(student2, AttendanceStatus.PRESENT),
+                new StudentAttendance(student3, AttendanceStatus.ABSENT)));
+        seedAttendanceSheet(beginnerB, teacher2, today.minusDays(14), List.of(
+                new StudentAttendance(student1, AttendanceStatus.PRESENT),
+                new StudentAttendance(student2, AttendanceStatus.EXCUSED),
+                new StudentAttendance(student3, AttendanceStatus.PRESENT)));
+        seedAttendanceSheet(intermediateA, teacher1, today.minusDays(7), List.of(
+                new StudentAttendance(student3, AttendanceStatus.PRESENT),
+                new StudentAttendance(student4, AttendanceStatus.PRESENT),
+                new StudentAttendance(student5, AttendanceStatus.ABSENT)));
+        seedAttendanceSheet(intermediateA, teacher1, today.minusDays(14), List.of(
+                new StudentAttendance(student3, AttendanceStatus.EXCUSED),
+                new StudentAttendance(student4, AttendanceStatus.PRESENT),
+                new StudentAttendance(student5, AttendanceStatus.ABSENT)));
+
+        seedScore(student1, beginnerB, teacher2, new BigDecimal("7.5"), new BigDecimal("8.0"),
+                "Hoc deu, can cai thien ky nang nghe");
+        seedScore(student2, beginnerB, teacher2, new BigDecimal("6.0"), new BigDecimal("6.5"),
+                "Can chu dong hon trong gio hoc");
+        seedScore(student3, beginnerB, teacher2, new BigDecimal("8.5"), new BigDecimal("9.0"),
+                "Xuat sac");
+        seedScore(student3, intermediateA, teacher1, new BigDecimal("7.0"), new BigDecimal("7.5"),
+                "Kha tot");
+        seedScore(student4, intermediateA, teacher1, new BigDecimal("5.5"), new BigDecimal("6.0"),
+                "Can on luyen them");
+        seedScore(student5, intermediateA, teacher1, new BigDecimal("9.0"), new BigDecimal("8.5"),
+                "Rat xuat sac");
+    }
+
     private Registration seedRegistration(User student, CourseClass courseClass,
                                           RegistrationStatus status, User admin) {
         LocalDateTime now = LocalDateTime.now();
@@ -204,6 +261,44 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
         transactionRepository.save(builder.build());
+    }
+
+    private void seedAttendanceSheet(CourseClass courseClass, User createdBy, LocalDate date,
+                                     List<StudentAttendance> attendances) {
+        List<AttendanceRecord> records = attendances.stream()
+                .map(attendance -> AttendanceRecord.builder()
+                        .student(attendance.student())
+                        .status(attendance.status())
+                        .build())
+                .toList();
+        AttendanceSheet sheet = AttendanceSheet.builder()
+                .courseClass(courseClass)
+                .date(date)
+                .createdBy(createdBy)
+                .build();
+        records.forEach(record -> record.setSheet(sheet));
+        sheet.getRecords().addAll(records);
+        attendanceSheetRepository.save(sheet);
+    }
+
+    private void seedScore(User student, CourseClass courseClass, User createdBy,
+                           BigDecimal midterm, BigDecimal fin, String comment) {
+        Score score = Score.builder()
+                .student(student)
+                .courseClass(courseClass)
+                .midtermScore(midterm)
+                .finalScore(fin)
+                .totalScore(calculateTotal(midterm, fin))
+                .comment(comment)
+                .createdBy(createdBy)
+                .build();
+        scoreRepository.save(score);
+    }
+
+    private BigDecimal calculateTotal(BigDecimal midterm, BigDecimal fin) {
+        return midterm.multiply(new BigDecimal("0.4"))
+                .add(fin.multiply(new BigDecimal("0.6")))
+                .setScale(1, RoundingMode.HALF_UP);
     }
 
     private User findUser(String email) {
@@ -279,5 +374,8 @@ public class DataSeeder implements CommandLineRunner {
                 .status(status)
                 .build();
         courseClassRepository.save(courseClass);
+    }
+
+    private record StudentAttendance(User student, AttendanceStatus status) {
     }
 }
