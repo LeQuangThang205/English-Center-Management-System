@@ -1,7 +1,5 @@
 import type { User } from '@/types/user';
-
-const TOKEN_KEY = 'ecms_token';
-const USER_KEY = 'ecms_user';
+import { TOKEN_KEY, USER_KEY } from '@/services/api/storageKeys';
 
 export const authStorage = {
   getToken(): string | null {

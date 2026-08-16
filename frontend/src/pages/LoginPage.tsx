@@ -1,33 +1,58 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { roleHomePath } from '@/routes/navigation';
 import { useAuth } from '@/features/auth/useAuth';
+import { validateLogin, type LoginFieldErrors } from '@/features/auth/loginValidation';
 import { ApiError } from '@/services/api/httpClient';
 import styles from './LoginPage.module.css';
 
+function toFriendlyError(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 401) return 'Email hoặc mật khẩu không đúng.';
+    if (err.status === 400) return 'Vui lòng kiểm tra lại thông tin đăng nhập.';
+    if (err.status && err.status >= 500) return 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
+    return 'Đăng nhập thất bại. Vui lòng thử lại.';
+  }
+  if (err instanceof TypeError) {
+    return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+  }
+  return 'Đăng nhập thất bại. Vui lòng thử lại.';
+}
+
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  if (isAuthenticated && user) {
+    return <Navigate to={roleHomePath(user.role)} replace />;
+  }
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setError(null);
+    if (submitting) return;
+
+    const errors = validateLogin({ email, password });
+    setFieldErrors(errors);
+    setFormError(null);
+    if (errors.email || errors.password) return;
+
     setSubmitting(true);
     try {
-      const user = await login({ email, password });
+      const loggedInUser = await login({ email: email.trim(), password });
       const from = (location.state as { from?: string } | null)?.from;
-      navigate(from ?? roleHomePath(user.role), { replace: true });
+      navigate(from ?? roleHomePath(loggedInUser.role), { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.');
+      setFormError(toFriendlyError(err));
     } finally {
       setSubmitting(false);
     }
@@ -35,7 +60,7 @@ export function LoginPage() {
 
   return (
     <div className={styles.page}>
-      <form className={styles.card} onSubmit={handleSubmit}>
+      <form className={styles.card} onSubmit={handleSubmit} noValidate>
         <div className={styles.header}>
           <span className={styles.logo}>
             <LogIn size={20} aria-hidden="true" />
@@ -50,22 +75,39 @@ export function LoginPage() {
             label="Email"
             placeholder="you@example.com"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (fieldErrors.email) {
+                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }
+            }}
+            error={fieldErrors.email}
             required
             autoComplete="email"
+            autoFocus
           />
           <Input
             type="password"
             label="Mật khẩu"
             placeholder="••••••••"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              if (fieldErrors.password) {
+                setFieldErrors((prev) => ({ ...prev, password: undefined }));
+              }
+            }}
+            error={fieldErrors.password}
             required
             autoComplete="current-password"
           />
         </div>
 
-        {error && <p className={styles.error}>{error}</p>}
+        {formError && (
+          <p className={styles.error} role="alert">
+            {formError}
+          </p>
+        )}
 
         <Button type="submit" loading={submitting} className={styles.submit}>
           Đăng nhập

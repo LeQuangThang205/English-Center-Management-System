@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { LoginRequest, User } from '@/types/user';
 import { authApi } from '@/services/api/auth';
+import { UNAUTHORIZED_EVENT } from '@/services/api/httpClient';
 import { authStorage } from '@/features/auth/authStorage';
 import { AuthContext, type AuthContextValue } from '@/features/auth/AuthContext';
 
@@ -8,6 +9,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => authStorage.getToken());
   const [user, setUser] = useState<User | null>(() => authStorage.getUser());
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      authStorage.clear();
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, []);
 
   const login = useCallback(async (payload: LoginRequest) => {
     setIsLoading(true);

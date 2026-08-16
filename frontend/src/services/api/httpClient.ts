@@ -1,7 +1,10 @@
 import type { ApiEnvelope } from '@/types/api';
+import { TOKEN_KEY, USER_KEY } from '@/services/api/storageKeys';
 
 const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '/api';
-const TOKEN_KEY = 'ecms_token';
+
+/** Sự kiện toàn cục khi session hết hạn — AuthProvider lắng nghe để reset trạng thái. */
+export const UNAUTHORIZED_EVENT = 'ecms:unauthorized';
 
 export class ApiError extends Error {
   readonly status?: number;
@@ -23,6 +26,11 @@ export function setAuthToken(token: string | null): void {
   } else {
     localStorage.removeItem(TOKEN_KEY);
   }
+}
+
+function clearSession(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 }
 
 interface RequestOptions {
@@ -51,6 +59,16 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     body = (await response.json()) as ApiEnvelope<T>;
   } catch {
     body = null;
+  }
+
+  const isAuthPath = path.startsWith('/auth/');
+  const hasEnvelope = body !== null && typeof body.success === 'boolean';
+
+  // Backend contract: protected endpoints trả 403 (body rỗng) khi token thiếu/hết hạn/không hợp lệ,
+  // và 401 khi đăng nhập sai. 403 kèm envelope ("Access denied") là lỗi phân quyền — không clear session.
+  if (!isAuthPath && (response.status === 401 || (response.status === 403 && !hasEnvelope))) {
+    clearSession();
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
   }
 
   if (!response.ok) {

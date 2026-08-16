@@ -5,7 +5,7 @@ import { navConfig } from '@/routes/navigation';
 import { LoginPage } from '@/pages/LoginPage';
 import { FoundationPreview } from '@/pages/FoundationPreview';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
-import { DashboardPlaceholder } from '@/pages/DashboardPlaceholder';
+import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import type { Role } from '@/types/user';
 import type { NavItem } from '@/types/nav';
@@ -17,12 +17,8 @@ function isDashboard(item: NavItem): boolean {
 function buildRoleRoutes(role: Role) {
   const items = navConfig[role].flatMap((group) => group.items);
   return items.map((item) => {
-    const path = item.path.replace(`/${role.toLowerCase()}`, '');
-    const element = isDashboard(item) ? (
-      <DashboardPlaceholder role={role} />
-    ) : (
-      <PlaceholderPage item={item} />
-    );
+    const path = item.path.replace(`/${role.toLowerCase()}/`, '');
+    const element = isDashboard(item) ? <DashboardPage /> : <PlaceholderPage item={item} />;
     return <Route key={item.path} path={path} element={element} />;
   });
 }

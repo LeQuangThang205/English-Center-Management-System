@@ -1,20 +1,21 @@
 # Project Progress — Intern Scope
 
 > Checkpoint TẠM DỪNG dự án. Đọc file này trước khi tiếp tục.
-> Cập nhật cuối: Step 17.5 — Seed Attendance + Scores (Seed Data 17.1 → 17.5 hoàn thành).
+> Cập nhật cuối: Step 18.3 — Role-based Dashboard (ADMIN / TEACHER / STUDENT) hoàn thành.
 
 ## Current checkpoint
 
-- Đã hoàn thành đến **Step 17.5** (Seed Data: Users + StudentProfiles, Courses + Classes, Registrations + Transactions, Attendance + Scores).
+- Đã hoàn thành đến **Step 18.3** (Frontend: role-based Dashboard ADMIN / TEACHER / STUDENT dùng dữ liệu thật qua client-side aggregation).
 - **Step 14: Score API** (`scores`, UC-17/UC-19). **Step 15: Schedule API / UC-18** (read-only `classes`).
 - **Step 16: Notification module** (UC-34 Gửi thông báo, UC-37/UC-38 Xem thông báo) + **Step 16.5** regression tests.
-- **Step 17: Seed Data framework** — còn **Step 17.6 (Notifications seed)** và **Step 17.7 (verify)** chưa làm.
-- Đây là checkpoint **TẠM DỪNG dự án** — không triển khai thêm feature mới (Frontend, AI Chat, Audit Log...) cho đến khi người dùng xác nhận tiếp tục.
+- **Step 17: Seed Data framework** — hoàn thành đến 17.6 (Notifications seed).
+- **Step 18: Frontend** — hoàn thành **18.1** (foundation) → **18.2** (auth/login) → **18.3** (role-based dashboard).
+- Đây là checkpoint **TẠM DỪNG dự án** — không triển khai thêm feature mới (AI Chat, Audit Log...) cho đến khi người dùng xác nhận tiếp tục.
 
 ## Repository context
 
 - Backend: Spring Boot 3.2.5, Java 17, Gradle 8.7, MySQL 8.0 (`ddl-auto: validate`), JWT (không refresh token).
-- Frontend (`frontend/`) trống — chưa triển khai.
+- Frontend (`frontend/`): React + Vite + TypeScript — đã có foundation (18.1), auth/login (18.2), role-based dashboard (18.3).
 - Script chạy test: `.\gradlew.bat clean test --console=plain` (trong `backend/`).
 - Chạy seed: `.\gradlew.bat bootRun --args="--spring.profiles.active=seed"` (seeder chỉ chạy với profile `seed`).
 
@@ -44,7 +45,21 @@ ffcd67d docs: update project progress handoff at Step 16.4
 3. Score API — Step 14 (`48d2401`)
 4. Schedule API — Step 15 (`48d2401`)
 5. Notification module — Step 16.1 → 16.5 (`1d8c804` → `c3ec63d`)
-6. Seed Data — Step 17.1 → 17.5 (`19c948a` → `8b94ffb`)
+6. Seed Data — Step 17.1 → 17.6 (`19c948a` → `61a7eae`)
+7. Frontend — Step 18.1 → 18.3 (`e649bb7` → Step 18.3 commit)
+   - 18.1 foundation (design system, AppShell, routes), 18.2 auth/login, 18.3 role-based dashboard.
+
+## Step 18.3 — Role-based Dashboard (hoàn thành)
+
+Frontend sử dụng **client-side aggregation** — KHÔNG thêm endpoint mới, KHÔNG sửa backend. Dashboard gọi các API có sẵn rồi tổng hợp ở client.
+
+- **ADMIN:** 4 stat (Học viên đang hoạt động, Giáo viên, Khóa học đang mở, Lớp đang học) + danh sách Đăng ký chờ duyệt + Thanh toán chờ xác nhận. Nguồn: `users`, `courses`, `classes`, `registrations`, `transactions`.
+- **TEACHER:** 4 stat (Lớp đang dạy, Tổng lớp được phân công, Buổi học tuần này, Thông báo chưa đọc) + Lịch dạy tuần này. Nguồn: `classes?teacherId`, `schedules?from&to`, `notifications/unread/count`.
+- **STUDENT:** 4 stat (Khóa học của tôi, Buổi học tuần này, Đăng ký chờ duyệt, Thông báo chưa đọc) + Lịch học tuần này + Đăng ký chờ duyệt. Nguồn: `registrations?studentId`, `schedules?from&to`, `notifications/unread/count`.
+- Tuần hiện tại tính từ Thứ 2 → Chủ nhật (`startOfWeek`/`endOfWeek`); lịch sắp theo thứ tự ngày + giờ bắt đầu.
+- Loading skeleton, error state (kèm retry), empty state đều đã có. Token thiếu/hết hạn → httpClient clear session + dispatch `UNAUTHORIZED_EVENT` → AuthProvider reset → redirect login.
+- Thêm các API service client: `usersApi`, `coursesApi`, `classesApi`, `schedulesApi`, `registrationsApi`, `transactionsApi`, `notificationsApi`; types: `course`, `courseClass`, `schedule`, `registration`, `transaction`, `notification`; validation login; tests `auth.test.tsx` (11) + `dashboard.test.tsx` (9) — tổng **24/24 tests PASS**, lint PASS, build PASS, live verify localhost:5173 PASS.
+- **CHƯA triển khai:** unread notification badge (chỉ show count trong stat, không có badge ở header) và **charts** — ngoài scope Step 18.3, chưa có summary endpoint. Để scope tương lai.
 
 ## Current test status
 
@@ -96,10 +111,10 @@ Base: `/api/notifications` — POST `create` (201, ADMIN only), GET list, GET `/
 
 ## Intern scope
 
-- Score Management ✅ / Schedule (UC-18) ✅ / Notification ✅ / Seed Data ⏳ (17.6–17.7 còn lại)
+- Score Management ✅ / Schedule (UC-18) ✅ / Notification ✅ / Seed Data ✅ (đến 17.6)
 - AI Chat + FAQ + Chat History ⏸ (chưa làm) — bảng `chat_conversations`, `chat_messages`, `faqs` chưa có entity.
 - Audit Log tối giản ⏸ (chưa làm) — bảng `audit_logs` chưa có entity.
-- Frontend ⏸ (trống).
+- Frontend ✅ (đến 18.3) — foundation, auth/login, role-based dashboard.
 
 ## Explicitly OUT OF SCOPE
 
