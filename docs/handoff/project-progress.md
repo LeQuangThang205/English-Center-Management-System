@@ -51,6 +51,8 @@ ffcd67d docs: update project progress handoff at Step 16.4
 
 ## Step 18.3 — Role-based Dashboard (hoàn thành)
 
+> Chi tiết phiên: `docs/meeting-notes/session-2026-08-16.md`.
+
 Frontend sử dụng **client-side aggregation** — KHÔNG thêm endpoint mới, KHÔNG sửa backend. Dashboard gọi các API có sẵn rồi tổng hợp ở client.
 
 - **ADMIN:** 4 stat (Học viên đang hoạt động, Giáo viên, Khóa học đang mở, Lớp đang học) + danh sách Đăng ký chờ duyệt + Thanh toán chờ xác nhận. Nguồn: `users`, `courses`, `classes`, `registrations`, `transactions`.

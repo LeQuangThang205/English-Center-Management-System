@@ -56,4 +56,4 @@ docs/meeting-notes/
 
 | Date | Topic | Attendees | Link |
 |------|-------|-----------|------|
-| — | — | — | — |
+| 2026-08-16 | Step 18.3 — Role-based Dashboard (Frontend) | — | [session-2026-08-16.md](session-2026-08-16.md) |
