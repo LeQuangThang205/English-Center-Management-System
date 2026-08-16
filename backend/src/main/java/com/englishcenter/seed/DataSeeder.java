@@ -4,6 +4,8 @@ import com.englishcenter.entity.AttendanceRecord;
 import com.englishcenter.entity.AttendanceSheet;
 import com.englishcenter.entity.Course;
 import com.englishcenter.entity.CourseClass;
+import com.englishcenter.entity.Notification;
+import com.englishcenter.entity.NotificationRecipient;
 import com.englishcenter.entity.Registration;
 import com.englishcenter.entity.Score;
 import com.englishcenter.entity.StudentProfile;
@@ -13,6 +15,7 @@ import com.englishcenter.entity.enums.AttendanceStatus;
 import com.englishcenter.entity.enums.ClassStatus;
 import com.englishcenter.entity.enums.CourseLevel;
 import com.englishcenter.entity.enums.CourseStatus;
+import com.englishcenter.entity.enums.NotificationTargetType;
 import com.englishcenter.entity.enums.RegistrationStatus;
 import com.englishcenter.entity.enums.Role;
 import com.englishcenter.entity.enums.ScheduleDay;
@@ -21,6 +24,8 @@ import com.englishcenter.entity.enums.UserStatus;
 import com.englishcenter.repository.AttendanceSheetRepository;
 import com.englishcenter.repository.CourseClassRepository;
 import com.englishcenter.repository.CourseRepository;
+import com.englishcenter.repository.NotificationRecipientRepository;
+import com.englishcenter.repository.NotificationRepository;
 import com.englishcenter.repository.RegistrationRepository;
 import com.englishcenter.repository.ScoreRepository;
 import com.englishcenter.repository.StudentProfileRepository;
@@ -39,7 +44,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @Profile("seed")
@@ -60,6 +68,8 @@ public class DataSeeder implements CommandLineRunner {
     private final TransactionRepository transactionRepository;
     private final AttendanceSheetRepository attendanceSheetRepository;
     private final ScoreRepository scoreRepository;
+    private final NotificationRepository notificationRepository;
+    private final NotificationRecipientRepository notificationRecipientRepository;
     private final PasswordEncoder passwordEncoder;
 
     private int transactionSequence = 0;
@@ -76,6 +86,7 @@ public class DataSeeder implements CommandLineRunner {
         seedCoursesAndClasses();
         seedRegistrationsAndTransactions();
         seedAttendanceAndScores();
+        seedNotifications();
         log.info("Finished seed data generation");
     }
 
@@ -211,6 +222,99 @@ public class DataSeeder implements CommandLineRunner {
                 "Can on luyen them");
         seedScore(student5, intermediateA, teacher1, new BigDecimal("9.0"), new BigDecimal("8.5"),
                 "Rat xuat sac");
+    }
+
+    private void seedNotifications() {
+        User admin = findUser(SEED_ADMIN_EMAIL);
+        User student1 = findUser("student1@example.com");
+        User student2 = findUser("student2@example.com");
+        User student3 = findUser("student3@example.com");
+        User student4 = findUser("student4@example.com");
+        User student5 = findUser("student5@example.com");
+
+        CourseClass beginnerB = findClassByName("Beginner Class B");
+        CourseClass intermediateA = findClassByName("Intermediate Class A");
+
+        seedNotification(admin, "Thong bao chung cho hoc vien",
+                "Thong bao toan he thong: trung tam cam on quy phu huynh va hoc vien da tin tuong.",
+                NotificationTargetType.ALL_STUDENTS, null,
+                Set.of(student1.getId(), student2.getId()));
+        seedNotification(admin, "Thong bao nhap hoc ky moi",
+                "Hoc ky moi sap bat dau, quy hoc vien vui long hoan thanh hoc phi dung han.",
+                NotificationTargetType.ALL_STUDENTS, null,
+                Set.of(student3.getId(), student4.getId(), student5.getId()));
+        seedNotification(admin, "Thong bao hop giao vien",
+                "Quy thay co vui long hop toan the giao vien vao thu 6 cuoi thang.",
+                NotificationTargetType.ALL_TEACHERS, null,
+                Set.of(findUser(TEACHER1_EMAIL).getId()));
+        seedNotification(admin, "Lich hoc lop Beginner Class B",
+                "Lop Beginner Class B khong co lich hoc trong tuan nghi le, quy hoc vien nho theo doi.",
+                NotificationTargetType.SPECIFIC_CLASS, beginnerB.getId(),
+                Set.of(student1.getId(), findUser(TEACHER2_EMAIL).getId()));
+        seedNotification(admin, "Thong bao lop Intermediate Class A",
+                "Lich thi giua ky lop Intermediate Class A duoc cong bo. Quy hoc vien xem chi tiet.",
+                NotificationTargetType.SPECIFIC_CLASS, intermediateA.getId(),
+                Set.of(student4.getId()));
+        seedNotification(admin, "Thong bao ca nhan cho hoc vien",
+                "Chao mung hoc vien moi! Vui long hoan thanh ho so hoc tap cua ban.",
+                NotificationTargetType.SPECIFIC_USER, student1.getId(),
+                Set.of());
+    }
+
+    private void seedNotification(User createdBy, String title, String content,
+                                  NotificationTargetType targetType, Long targetId,
+                                  Set<Long> readUserIds) {
+        List<User> recipients = resolveNotificationRecipients(targetType, targetId);
+        Notification notification = Notification.builder()
+                .title(title)
+                .content(content)
+                .targetType(targetType)
+                .targetId(targetId)
+                .createdBy(createdBy)
+                .build();
+        notificationRepository.save(notification);
+        LocalDateTime now = LocalDateTime.now();
+        List<NotificationRecipient> recipientEntities = recipients.stream()
+                .map(user -> NotificationRecipient.builder()
+                        .notification(notification)
+                        .user(user)
+                        .isRead(readUserIds.contains(user.getId()))
+                        .readAt(readUserIds.contains(user.getId()) ? now : null)
+                        .build())
+                .toList();
+        notificationRecipientRepository.saveAll(recipientEntities);
+    }
+
+    private List<User> resolveNotificationRecipients(NotificationTargetType targetType, Long targetId) {
+        return switch (targetType) {
+            case ALL_STUDENTS -> activeUsersByRole(Role.STUDENT);
+            case ALL_TEACHERS -> activeUsersByRole(Role.TEACHER);
+            case SPECIFIC_CLASS -> resolveClassNotificationRecipients(targetId);
+            case SPECIFIC_USER -> List.of(userRepository.findById(targetId).orElseThrow());
+        };
+    }
+
+    private List<User> resolveClassNotificationRecipients(Long classId) {
+        CourseClass courseClass = courseClassRepository.findById(classId).orElseThrow();
+        List<User> recipients = new ArrayList<>();
+        registrationRepository.findByCourseClass_Id(classId).stream()
+                .filter(r -> r.getStatus() == RegistrationStatus.APPROVED
+                        || r.getStatus() == RegistrationStatus.PAID)
+                .map(Registration::getStudent)
+                .forEach(recipients::add);
+        if (courseClass.getTeacher() != null) {
+            recipients.add(courseClass.getTeacher());
+        }
+        Set<Long> seen = new HashSet<>();
+        return recipients.stream()
+                .filter(user -> seen.add(user.getId()))
+                .toList();
+    }
+
+    private List<User> activeUsersByRole(Role role) {
+        return userRepository.findByRole(role).stream()
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .toList();
     }
 
     private Registration seedRegistration(User student, CourseClass courseClass,
