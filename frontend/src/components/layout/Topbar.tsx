@@ -6,6 +6,7 @@ import type { Role } from '@/types/user';
 import { Avatar } from '@/components/ui/Avatar';
 import { flattenNav } from '@/routes/navigation';
 import { useAuth } from '@/features/auth/useAuth';
+import { useUnreadNotifications } from '@/features/notifications/useUnreadNotifications';
 import styles from './Topbar.module.css';
 
 export interface TopbarProps {
@@ -16,11 +17,12 @@ export interface TopbarProps {
 }
 
 export function Topbar({ role, onMenuClick, preview = false }: TopbarProps) {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { count: unreadCount } = useUnreadNotifications(isAuthenticated && !preview);
 
   const current = flattenNav(role).find((item) => location.pathname.startsWith(item.path));
 
@@ -50,8 +52,17 @@ export function Topbar({ role, onMenuClick, preview = false }: TopbarProps) {
       </div>
 
       <div className={styles.right}>
-        <button type="button" className={styles.iconButton} aria-label="Thông báo">
+        <button
+          type="button"
+          className={styles.iconButton}
+          aria-label={unreadCount > 0 ? `Thông báo, ${unreadCount} chưa đọc` : 'Thông báo'}
+        >
           <Bell size={20} />
+          {unreadCount > 0 && (
+            <span className={styles.notificationBadge} aria-hidden="true">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
 
         <div className={styles.userWrap} ref={menuRef}>
