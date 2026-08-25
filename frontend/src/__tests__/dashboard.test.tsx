@@ -12,11 +12,8 @@ import {
   sortSchedules,
   startOfWeek,
 } from '@/features/dashboard/dashboardData';
-import type {
-  AdminDashboardData,
-  StudentDashboardData,
-  TeacherDashboardData,
-} from '@/features/dashboard/types';
+import type { AdminDashboardData, StudentDashboardData, TeacherDashboardData } from '@/features/dashboard/types';
+import type { AttendanceSheet } from '@/types/attendance';
 import type { Course } from '@/types/course';
 import type { CourseClass } from '@/types/courseClass';
 import type { Registration } from '@/types/registration';
@@ -174,16 +171,27 @@ describe('dashboard data helpers', () => {
       teachers: 3,
       activeCourses: 5,
       studyingClasses: 4,
+      currentMonthRevenue: 15000000,
       pendingRegistrations: [],
       pendingTransactions: [],
+      revenueByMonth: [],
+      newStudentsByMonth: [],
+      attendanceByClass: [],
     };
 
-    expect(buildAdminStats(data)).toEqual([
+    const stats = buildAdminStats(data);
+    expect(stats.slice(0, 4)).toEqual([
       { key: 'students', label: 'Học viên đang hoạt động', value: 12 },
       { key: 'teachers', label: 'Giáo viên', value: 3 },
       { key: 'courses', label: 'Khóa học đang mở', value: 5 },
       { key: 'classes', label: 'Lớp đang học', value: 4 },
     ]);
+    expect(stats[4]).toMatchObject({
+      key: 'currentMonthRevenue',
+      label: 'Doanh thu tháng này',
+      value: 15000000,
+    });
+    expect(typeof stats[4].formatter).toBe('function');
   });
 
   it('builds teacher stats', () => {
@@ -229,10 +237,13 @@ describe('dashboard page', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders the admin dashboard with aggregated stats and pending items', async () => {
+  it('renders the admin dashboard with aggregated stats, charts and pending items', async () => {
     authStorage.setSession('jwt.admin', adminUser);
 
-    const students: User[] = [studentUser, { ...studentUser, id: 8, fullName: 'Trần Thị Bình' }];
+    const students: User[] = [
+      { ...studentUser, createdAt: '2026-08-01T09:00:00' },
+      { ...studentUser, id: 8, fullName: 'Trần Thị Bình', createdAt: '2026-08-05T09:00:00' },
+    ];
     const teachers: User[] = [teacherUser, { ...teacherUser, id: 9, fullName: 'Thầy Minh' }];
     const courses: Course[] = [
       {
@@ -294,14 +305,72 @@ describe('dashboard page', () => {
         createdAt: '2026-08-15T10:00:00',
       },
     ];
+    const successTransactions: Transaction[] = [
+      {
+        id: 3,
+        registrationId: 3,
+        studentId: 9,
+        studentName: 'Hoàng Văn Cường',
+        classId: 3,
+        className: 'Beginner Class B',
+        courseName: 'English Foundation',
+        amount: 1500000,
+        paymentMethod: 'BANK_TRANSFER',
+        transactionCode: 'TXN-000003',
+        status: 'SUCCESS',
+        createdAt: '2026-08-10T10:00:00',
+        paidAt: '2026-08-10T10:00:00',
+      },
+      {
+        id: 5,
+        registrationId: 5,
+        studentId: 10,
+        studentName: 'Vũ Thị Dung',
+        classId: 4,
+        className: 'Intermediate Class A',
+        courseName: 'English Communication',
+        amount: 1800000,
+        paymentMethod: 'BANK_TRANSFER',
+        transactionCode: 'TXN-000005',
+        status: 'SUCCESS',
+        createdAt: '2026-08-12T10:00:00',
+        paidAt: '2026-08-12T10:00:00',
+      },
+    ];
+    const attendanceSheets: AttendanceSheet[] = [
+      {
+        id: 1,
+        classId: 3,
+        className: 'Beginner Class B',
+        courseName: 'English Foundation',
+        date: '2026-08-05',
+        records: [
+          { id: 1, studentId: 7, studentName: 'Nguyễn Văn An', status: 'PRESENT' },
+          { id: 2, studentId: 8, studentName: 'Trần Thị Bình', status: 'PRESENT' },
+        ],
+      },
+      {
+        id: 2,
+        classId: 3,
+        className: 'Beginner Class B',
+        courseName: 'English Foundation',
+        date: '2026-08-12',
+        records: [
+          { id: 3, studentId: 7, studentName: 'Nguyễn Văn An', status: 'ABSENT' },
+          { id: 4, studentId: 8, studentName: 'Trần Thị Bình', status: 'PRESENT' },
+        ],
+      },
+    ];
 
     const urlResponses: Record<string, unknown> = {
-      '/users?role=STUDENT&status=ACTIVE': students,
+      '/users?role=STUDENT': students,
       '/users?role=TEACHER': teachers,
       '/courses': courses,
       '/classes?status=STUDYING': studyingClasses,
       '/registrations?status=PENDING': pendingRegistrations,
       '/transactions?status=PENDING_CONFIRMATION': pendingTransactions,
+      '/transactions?status=SUCCESS': successTransactions,
+      '/attendance/sheets': attendanceSheets,
     };
 
     mockApi(respondFrom(urlResponses));
@@ -312,6 +381,17 @@ describe('dashboard page', () => {
     expect(screen.getAllByText('Giáo viên').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Khóa học đang mở')).toBeTruthy();
     expect(screen.getByText('Lớp đang học')).toBeTruthy();
+
+    expect(screen.getByText('Doanh thu tháng này')).toBeTruthy();
+    expect(screen.getAllByText('3.300.000 ₫').length).toBeGreaterThanOrEqual(1);
+
+    expect(screen.getByText('Doanh thu theo tháng')).toBeTruthy();
+    expect(screen.getByText('Học viên mới theo tháng')).toBeTruthy();
+    expect(screen.getByText('Tỷ lệ chuyên cần theo lớp')).toBeTruthy();
+    expect(screen.getAllByText('08/2026').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Beginner Class B')).toBeTruthy();
+    expect(screen.getByText('75%')).toBeTruthy();
+    expect(screen.getByText('English Foundation · 3/4 lượt có mặt')).toBeTruthy();
 
     expect(screen.getAllByText('Nguyễn Văn An').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Chờ duyệt')).toBeTruthy();

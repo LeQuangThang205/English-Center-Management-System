@@ -42,6 +42,10 @@ export function Topbar({ role, onMenuClick, preview = false }: TopbarProps) {
     navigate('/login', { replace: true });
   };
 
+  const handleNotificationsClick = () => {
+    navigate(`/${role.toLowerCase()}/notifications`);
+  };
+
   return (
     <header className={styles.topbar}>
       <div className={styles.left}>
@@ -56,6 +60,7 @@ export function Topbar({ role, onMenuClick, preview = false }: TopbarProps) {
           type="button"
           className={styles.iconButton}
           aria-label={unreadCount > 0 ? `Thông báo, ${unreadCount} chưa đọc` : 'Thông báo'}
+          onClick={preview ? undefined : handleNotificationsClick}
         >
           <Bell size={20} />
           {unreadCount > 0 && (

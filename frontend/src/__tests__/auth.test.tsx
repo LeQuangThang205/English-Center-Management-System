@@ -85,6 +85,7 @@ function mockDashboardRoutes(loginBody: unknown) {
     { match: (url) => url.includes('/registrations'), response: { body: emptyList } },
     { match: (url) => url.includes('/transactions'), response: { body: emptyList } },
     { match: (url) => url.includes('/schedules'), response: { body: emptyList } },
+    { match: (url) => url.includes('/attendance/sheets'), response: { body: emptyList } },
     {
       match: (url) => url.includes('/notifications/unread/count'),
       response: { body: { success: true, data: 0 } },

@@ -1,4 +1,5 @@
 import {
+  Banknote,
   Bell,
   BookOpen,
   CalendarDays,
@@ -16,6 +17,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SCHEDULE_DAY_LABELS } from '@/features/dashboard/dashboardData';
+import { AdminCharts } from '@/features/dashboard/AdminCharts';
 import type { DashboardStat } from '@/features/dashboard/types';
 import type {
   AdminDashboardData,
@@ -56,6 +58,7 @@ const STAT_ICONS: Record<string, LucideIcon> = {
   myCourses: BookOpen,
   pendingRegistrations: ClipboardList,
   notifications: Bell,
+  currentMonthRevenue: Banknote,
 };
 
 export function DashboardPage() {
@@ -104,6 +107,11 @@ function AdminDashboard({ stats, data }: { stats: DashboardStat[]; data: AdminDa
   return (
     <>
       <StatGrid stats={stats} />
+      <AdminCharts
+        revenueByMonth={data.revenueByMonth}
+        newStudentsByMonth={data.newStudentsByMonth}
+        attendanceByClass={data.attendanceByClass}
+      />
       <div className={styles.sections}>
         <PendingRegistrationsSection items={data.pendingRegistrations} />
         <PendingTransactionsSection items={data.pendingTransactions} />
@@ -146,7 +154,7 @@ function StatGrid({ stats }: { stats: DashboardStat[] }) {
               <Icon size={20} aria-hidden="true" />
             </span>
             <div className={styles.statBody}>
-              <p className={styles.statValue}>{stat.value}</p>
+              <p className={styles.statValue}>{stat.formatter ? stat.formatter(stat.value) : stat.value}</p>
               <p className={styles.statLabel}>{stat.label}</p>
             </div>
           </div>

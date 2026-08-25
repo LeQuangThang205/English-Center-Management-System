@@ -6,6 +6,10 @@ import { LoginPage } from '@/pages/LoginPage';
 import { FoundationPreview } from '@/pages/FoundationPreview';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { NotificationsPage } from '@/pages/NotificationsPage';
+import { CoursesPage } from '@/pages/CoursesPage';
+import { TeacherScoresPage } from '@/pages/TeacherScoresPage';
+import { StudentScoresPage } from '@/pages/StudentScoresPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import type { Role } from '@/types/user';
 import type { NavItem } from '@/types/nav';
@@ -14,11 +18,39 @@ function isDashboard(item: NavItem): boolean {
   return item.path.endsWith('/dashboard');
 }
 
+function isNotifications(item: NavItem): boolean {
+  return item.path.endsWith('/notifications');
+}
+
+function isAdminCourses(item: NavItem): boolean {
+  return item.path === '/admin/courses';
+}
+
+function isTeacherScores(item: NavItem): boolean {
+  return item.path === '/teacher/scores';
+}
+
+function isStudentScores(item: NavItem): boolean {
+  return item.path === '/student/scores';
+}
+
 function buildRoleRoutes(role: Role) {
   const items = navConfig[role].flatMap((group) => group.items);
   return items.map((item) => {
     const path = item.path.replace(`/${role.toLowerCase()}/`, '');
-    const element = isDashboard(item) ? <DashboardPage /> : <PlaceholderPage item={item} />;
+    const element = isDashboard(item) ? (
+      <DashboardPage />
+    ) : isNotifications(item) ? (
+      <NotificationsPage />
+    ) : isAdminCourses(item) ? (
+      <CoursesPage />
+    ) : isTeacherScores(item) ? (
+      <TeacherScoresPage />
+    ) : isStudentScores(item) ? (
+      <StudentScoresPage />
+    ) : (
+      <PlaceholderPage item={item} />
+    );
     return <Route key={item.path} path={path} element={element} />;
   });
 }
