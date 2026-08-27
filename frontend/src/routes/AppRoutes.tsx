@@ -10,6 +10,7 @@ import { NotificationsPage } from '@/pages/NotificationsPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { TeacherScoresPage } from '@/pages/TeacherScoresPage';
 import { TeacherClassesPage } from '@/pages/TeacherClassesPage';
+import { TeacherSchedulePage } from '@/pages/TeacherSchedulePage';
 import { StudentScoresPage } from '@/pages/StudentScoresPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import type { Role } from '@/types/user';
@@ -39,6 +40,10 @@ function isTeacherClasses(item: NavItem): boolean {
   return item.path === '/teacher/classes';
 }
 
+function isTeacherSchedule(item: NavItem): boolean {
+  return item.path === '/teacher/schedule';
+}
+
 function buildRoleRoutes(role: Role) {
   const items = navConfig[role].flatMap((group) => group.items);
   return items.map((item) => {
@@ -55,6 +60,8 @@ function buildRoleRoutes(role: Role) {
       <StudentScoresPage />
     ) : isTeacherClasses(item) ? (
       <TeacherClassesPage />
+    ) : isTeacherSchedule(item) ? (
+      <TeacherSchedulePage />
     ) : (
       <PlaceholderPage item={item} />
     );
