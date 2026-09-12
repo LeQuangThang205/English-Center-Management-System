@@ -6,6 +6,15 @@ export interface UsersQuery {
   status?: UserStatus;
 }
 
+export interface UserPayload {
+  email: string;
+  fullName: string;
+  phone?: string | null;
+  role: Role;
+  status: UserStatus;
+  avatarUrl?: string | null;
+}
+
 export const usersApi = {
   getUsers: (query?: UsersQuery) => {
     const params = new URLSearchParams();
@@ -14,4 +23,6 @@ export const usersApi = {
     const qs = params.toString();
     return http.get<User[]>(`/users${qs ? `?${qs}` : ''}`);
   },
+  updateUser: (id: number, payload: UserPayload) => http.put<User>(`/users/${id}`, payload),
+  deleteUser: (id: number) => http.delete<void>(`/users/${id}`),
 };

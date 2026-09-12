@@ -6,15 +6,37 @@ import { LoginPage } from '@/pages/LoginPage';
 import { FoundationPreview } from '@/pages/FoundationPreview';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { AdminScoresPage } from '@/pages/AdminScoresPage';
+import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
+import { AdminTeachersPage } from '@/pages/AdminTeachersPage';
+import { AdminClassesPage } from '@/pages/AdminClassesPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { TeacherScoresPage } from '@/pages/TeacherScoresPage';
 import { TeacherClassesPage } from '@/pages/TeacherClassesPage';
 import { TeacherSchedulePage } from '@/pages/TeacherSchedulePage';
 import { StudentScoresPage } from '@/pages/StudentScoresPage';
+import { StudentSchedulePage } from '@/pages/StudentSchedulePage';
+import { StudentCoursesPage } from '@/pages/StudentCoursesPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import type { Role } from '@/types/user';
 import type { NavItem } from '@/types/nav';
+
+function isAdminStudents(item: NavItem): boolean {
+  return item.path === '/admin/students';
+}
+
+function isAdminTeachers(item: NavItem): boolean {
+  return item.path === '/admin/teachers';
+}
+
+function isAdminClasses(item: NavItem): boolean {
+  return item.path === '/admin/classes';
+}
+
+function isAdminScores(item: NavItem): boolean {
+  return item.path === '/admin/scores';
+}
 
 function isDashboard(item: NavItem): boolean {
   return item.path.endsWith('/dashboard');
@@ -44,12 +66,28 @@ function isTeacherSchedule(item: NavItem): boolean {
   return item.path === '/teacher/schedule';
 }
 
+function isStudentCourses(item: NavItem): boolean {
+  return item.path === '/student/courses';
+}
+
+function isStudentSchedule(item: NavItem): boolean {
+  return item.path === '/student/schedule';
+}
+
 function buildRoleRoutes(role: Role) {
   const items = navConfig[role].flatMap((group) => group.items);
   return items.map((item) => {
     const path = item.path.replace(`/${role.toLowerCase()}/`, '');
     const element = isDashboard(item) ? (
       <DashboardPage />
+    ) : isAdminScores(item) ? (
+      <AdminScoresPage />
+    ) : isAdminStudents(item) ? (
+      <AdminStudentsPage />
+    ) : isAdminTeachers(item) ? (
+      <AdminTeachersPage />
+    ) : isAdminClasses(item) ? (
+      <AdminClassesPage />
     ) : isNotifications(item) ? (
       <NotificationsPage />
     ) : isAdminCourses(item) ? (
@@ -58,6 +96,10 @@ function buildRoleRoutes(role: Role) {
       <TeacherScoresPage />
     ) : isStudentScores(item) ? (
       <StudentScoresPage />
+    ) : isStudentSchedule(item) ? (
+      <StudentSchedulePage />
+    ) : isStudentCourses(item) ? (
+      <StudentCoursesPage />
     ) : isTeacherClasses(item) ? (
       <TeacherClassesPage />
     ) : isTeacherSchedule(item) ? (
