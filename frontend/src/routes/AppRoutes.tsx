@@ -6,6 +6,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { FoundationPreview } from '@/pages/FoundationPreview';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { AdminAttendancePage } from '@/pages/AdminAttendancePage';
 import { AdminScoresPage } from '@/pages/AdminScoresPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminTeachersPage } from '@/pages/AdminTeachersPage';
@@ -32,6 +33,10 @@ function isAdminTeachers(item: NavItem): boolean {
 
 function isAdminClasses(item: NavItem): boolean {
   return item.path === '/admin/classes';
+}
+
+function isAdminAttendance(item: NavItem): boolean {
+  return item.path === '/admin/attendance';
 }
 
 function isAdminScores(item: NavItem): boolean {
@@ -80,6 +85,8 @@ function buildRoleRoutes(role: Role) {
     const path = item.path.replace(`/${role.toLowerCase()}/`, '');
     const element = isDashboard(item) ? (
       <DashboardPage />
+    ) : isAdminAttendance(item) ? (
+      <AdminAttendancePage />
     ) : isAdminScores(item) ? (
       <AdminScoresPage />
     ) : isAdminStudents(item) ? (

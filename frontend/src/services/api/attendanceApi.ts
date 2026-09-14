@@ -14,4 +14,5 @@ export const attendanceApi = {
     const qs = params.toString();
     return http.get<AttendanceSheet[]>(`/attendance/sheets${qs ? `?${qs}` : ''}`);
   },
+  getSheet: (id: number) => http.get<AttendanceSheet>(`/attendance/sheets/${id}`),
 };
