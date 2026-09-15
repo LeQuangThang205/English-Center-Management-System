@@ -23,3 +23,10 @@ app:
   jwt:
     secret: "english-center-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm-2026"
     expiration: 86400000
+  ai:
+    base-url: "${AI_BASE_URL:https://api.openai.com/v1}"
+    model: "${AI_MODEL:gpt-4o-mini}"
+    api-key: "${AI_API_KEY:}"
+    timeout-ms: 30000
+    max-context-chars: 6000
+    max-output-tokens: 500

@@ -11,6 +11,10 @@ import { AdminScoresPage } from '@/pages/AdminScoresPage';
 import { AdminStudentsPage } from '@/pages/AdminStudentsPage';
 import { AdminTeachersPage } from '@/pages/AdminTeachersPage';
 import { AdminClassesPage } from '@/pages/AdminClassesPage';
+import { AdminRegistrationsPage } from '@/pages/AdminRegistrationsPage';
+import { AdminTransactionsPage } from '@/pages/AdminTransactionsPage';
+import { StudentRegistrationsPage } from '@/pages/StudentRegistrationsPage';
+import { TeacherAttendancePage } from '@/pages/TeacherAttendancePage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { TeacherScoresPage } from '@/pages/TeacherScoresPage';
@@ -33,6 +37,14 @@ function isAdminTeachers(item: NavItem): boolean {
 
 function isAdminClasses(item: NavItem): boolean {
   return item.path === '/admin/classes';
+}
+
+function isAdminRegistrations(item: NavItem): boolean {
+  return item.path === '/admin/registrations';
+}
+
+function isAdminTransactions(item: NavItem): boolean {
+  return item.path === '/admin/transactions';
 }
 
 function isAdminAttendance(item: NavItem): boolean {
@@ -67,12 +79,20 @@ function isTeacherClasses(item: NavItem): boolean {
   return item.path === '/teacher/classes';
 }
 
+function isTeacherAttendance(item: NavItem): boolean {
+  return item.path === '/teacher/attendance';
+}
+
 function isTeacherSchedule(item: NavItem): boolean {
   return item.path === '/teacher/schedule';
 }
 
 function isStudentCourses(item: NavItem): boolean {
   return item.path === '/student/courses';
+}
+
+function isStudentRegistrations(item: NavItem): boolean {
+  return item.path === '/student/registrations';
 }
 
 function isStudentSchedule(item: NavItem): boolean {
@@ -95,6 +115,10 @@ function buildRoleRoutes(role: Role) {
       <AdminTeachersPage />
     ) : isAdminClasses(item) ? (
       <AdminClassesPage />
+    ) : isAdminRegistrations(item) ? (
+      <AdminRegistrationsPage />
+    ) : isAdminTransactions(item) ? (
+      <AdminTransactionsPage />
     ) : isNotifications(item) ? (
       <NotificationsPage />
     ) : isAdminCourses(item) ? (
@@ -107,8 +131,12 @@ function buildRoleRoutes(role: Role) {
       <StudentSchedulePage />
     ) : isStudentCourses(item) ? (
       <StudentCoursesPage />
+    ) : isStudentRegistrations(item) ? (
+      <StudentRegistrationsPage />
     ) : isTeacherClasses(item) ? (
       <TeacherClassesPage />
+    ) : isTeacherAttendance(item) ? (
+      <TeacherAttendancePage />
     ) : isTeacherSchedule(item) ? (
       <TeacherSchedulePage />
     ) : (

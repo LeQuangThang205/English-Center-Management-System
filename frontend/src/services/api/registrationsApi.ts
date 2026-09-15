@@ -7,6 +7,11 @@ export interface RegistrationsQuery {
   status?: RegistrationStatus;
 }
 
+export interface CreateRegistrationPayload {
+  studentId: number;
+  classId: number;
+}
+
 export const registrationsApi = {
   getRegistrations: (query?: RegistrationsQuery) => {
     const params = new URLSearchParams();
@@ -16,4 +21,12 @@ export const registrationsApi = {
     const qs = params.toString();
     return http.get<Registration[]>(`/registrations${qs ? `?${qs}` : ''}`);
   },
+  getRegistrationById: (id: number) => http.get<Registration>(`/registrations/${id}`),
+  createRegistration: (payload: CreateRegistrationPayload) =>
+    http.post<Registration>('/registrations', payload),
+  approveRegistration: (id: number) => http.put<Registration>(`/registrations/${id}/approve`),
+  rejectRegistration: (id: number, reason?: string) =>
+    http.put<Registration>(`/registrations/${id}/reject`, { reason }),
+  cancelRegistration: (id: number) => http.put<void>(`/registrations/${id}/cancel`),
+  markPaidRegistration: (id: number) => http.put<Registration>(`/registrations/${id}/mark-paid`),
 };

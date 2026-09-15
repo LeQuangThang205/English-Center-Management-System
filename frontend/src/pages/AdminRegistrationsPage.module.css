@@ -1,0 +1,220 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.toolbar {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.statusFilter {
+  width: 220px;
+  max-width: 100%;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--color-bg-subtle);
+  white-space: nowrap;
+}
+
+.table tbody tr:hover {
+  background: var(--color-bg-hover);
+}
+
+.studentName {
+  font-weight: 500;
+}
+
+.numberCol {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: 2px solid var(--color-primary-300);
+  outline-offset: 1px;
+}
+
+.inlineError {
+  font-size: var(--font-size-2xs);
+  color: var(--color-danger-600);
+}
+
+.confirmText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailRow dt {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.detailRow dd {
+  margin: 0;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 160px 180px 200px 100px 120px 140px;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.skeletonLine {
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-muted) 25%,
+    var(--color-bg-hover) 50%,
+    var(--color-bg-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonLineName {
+  width: 100%;
+}
+
+.skeletonLineCourse {
+  width: 90%;
+}
+
+.skeletonLineSchedule {
+  width: 85%;
+}
+
+.skeletonLineRoom {
+  width: 60%;
+}
+
+.skeletonLineStatus {
+  width: 70%;
+}
+
+.skeletonLineAction {
+  width: 80%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .search,
+  .statusFilter {
+    width: 100%;
+  }
+
+  .skeletonRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .detailRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
