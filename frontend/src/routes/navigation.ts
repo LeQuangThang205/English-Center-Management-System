@@ -47,7 +47,7 @@ export const navConfig: Record<Role, NavGroup[]> = {
     {
       title: 'Hệ thống',
       items: [
-        { label: 'AI Assistant', path: '/admin/ai-chat', icon: Bot, comingSoon: true },
+        { label: 'AI Assistant', path: '/admin/ai-chat', icon: Bot },
         { label: 'Audit Log', path: '/admin/audit-logs', icon: ScrollText, comingSoon: true },
         { label: 'Cài đặt', path: '/admin/settings', icon: Settings, comingSoon: true },
       ],
@@ -68,7 +68,10 @@ export const navConfig: Record<Role, NavGroup[]> = {
     },
     {
       title: 'Thông tin',
-      items: [{ label: 'Thông báo', path: '/teacher/notifications', icon: Bell }],
+      items: [
+        { label: 'Thông báo', path: '/teacher/notifications', icon: Bell },
+        { label: 'AI Assistant', path: '/teacher/ai-chat', icon: Bot },
+      ],
     },
   ],
   STUDENT: [
@@ -86,7 +89,10 @@ export const navConfig: Record<Role, NavGroup[]> = {
     },
     {
       title: 'Thông tin',
-      items: [{ label: 'Thông báo', path: '/student/notifications', icon: Bell }],
+      items: [
+        { label: 'Thông báo', path: '/student/notifications', icon: Bell },
+        { label: 'AI Assistant', path: '/student/ai-chat', icon: Bot },
+      ],
     },
   ],
 };

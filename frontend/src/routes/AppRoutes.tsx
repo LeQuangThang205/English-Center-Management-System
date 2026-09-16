@@ -15,6 +15,7 @@ import { AdminRegistrationsPage } from '@/pages/AdminRegistrationsPage';
 import { AdminTransactionsPage } from '@/pages/AdminTransactionsPage';
 import { StudentRegistrationsPage } from '@/pages/StudentRegistrationsPage';
 import { TeacherAttendancePage } from '@/pages/TeacherAttendancePage';
+import { AiChatPage } from '@/pages/AiChatPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { TeacherScoresPage } from '@/pages/TeacherScoresPage';
@@ -61,6 +62,10 @@ function isDashboard(item: NavItem): boolean {
 
 function isNotifications(item: NavItem): boolean {
   return item.path.endsWith('/notifications');
+}
+
+function isAiChat(item: NavItem): boolean {
+  return item.path.endsWith('/ai-chat');
 }
 
 function isAdminCourses(item: NavItem): boolean {
@@ -121,6 +126,8 @@ function buildRoleRoutes(role: Role) {
       <AdminTransactionsPage />
     ) : isNotifications(item) ? (
       <NotificationsPage />
+    ) : isAiChat(item) ? (
+      <AiChatPage />
     ) : isAdminCourses(item) ? (
       <CoursesPage />
     ) : isTeacherScores(item) ? (
