@@ -283,10 +283,20 @@ describe('admin dashboard charts', () => {
   it('renders the three charts with aggregated values', async () => {
     authStorage.setSession('jwt.admin', adminUser);
 
+    // Anchor mock data to the real current month so the "current month
+    // revenue" stat and the monthly charts stay in sync no matter which
+    // calendar month the suite runs in.
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, '0');
+    const month = pad(now.getMonth() + 1);
+    const monthKey = `${now.getFullYear()}-${month}`;
+    const monthLabel = `${month}/${now.getFullYear()}`;
+    const atDay = (day: number) => `${monthKey}-${pad(day)}T10:00:00`;
+
     const urlResponses: Record<string, unknown> = {
       '/users?role=STUDENT': [
-        { ...studentUser, createdAt: '2026-08-01T09:00:00' },
-        { ...studentUser, id: 8, fullName: 'Trần Thị Bình', createdAt: '2026-08-05T09:00:00' },
+        { ...studentUser, createdAt: atDay(1) },
+        { ...studentUser, id: 8, fullName: 'Trần Thị Bình', createdAt: atDay(5) },
       ],
       '/users?role=TEACHER': [teacherUser],
       '/courses': [],
@@ -294,8 +304,8 @@ describe('admin dashboard charts', () => {
       '/registrations?status=PENDING': [],
       '/transactions?status=PENDING_CONFIRMATION': [],
       '/transactions?status=SUCCESS': [
-        successTransaction(3, 1500000, '2026-08-10T10:00:00'),
-        successTransaction(5, 1800000, '2026-08-12T10:00:00'),
+        successTransaction(3, 1500000, atDay(10)),
+        successTransaction(5, 1800000, atDay(12)),
       ],
       '/attendance/sheets': [
         attendanceSheet(1, 3, 'Beginner Class B', 'English Foundation', [
@@ -316,7 +326,7 @@ describe('admin dashboard charts', () => {
     expect(screen.getByText('Học viên mới theo tháng')).toBeTruthy();
     expect(screen.getByText('Tỷ lệ chuyên cần theo lớp')).toBeTruthy();
     expect(screen.getByText('Doanh thu tháng này')).toBeTruthy();
-    expect(screen.getAllByText('08/2026').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(monthLabel).length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText('3.300.000 ₫').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Beginner Class B')).toBeTruthy();
     expect(screen.getByText('75%')).toBeTruthy();
