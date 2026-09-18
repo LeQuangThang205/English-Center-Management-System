@@ -1,7 +1,9 @@
 # English Center Management System — Project Context
 
 > Nguồn context chính thức cho OpenCode. Đọc file này (cùng `ROADMAP.md`) trước khi làm việc.
-> Cập nhật cuối: sau S11 — CORE BUSINESS COMPLETE. Không commit/push khi chưa được lệnh.
+> Cập nhật cuối: sau S18 — DOCS/DEMO PREP (S12 AI backend ✅, S13 AI frontend ✅, S14 MySQL boot ✅,
+> S15 frontend cleanup ✅, S16 full regression ✅, S17 UAT 3 roles ✅, D1 attendance-update fix ✅,
+> S16B live LLM DEFERRED vì chưa có AI_API_KEY). Không commit/push khi chưa được lệnh.
 
 ## 1. Project Overview
 
@@ -18,8 +20,10 @@ frontend-only trên backend contract đã có, code dễ đọc, test behavior �
 
 - Backend core + modules (auth, users, courses, classes, registrations, transactions,
   attendance, scores, schedules, notifications) + seed framework.
-- Frontend: foundation, auth, dashboard 3 role, và các slice S01–S11.
-- Chưa làm (P2 optional): AI Chat/FAQ, Audit Log, Settings.
+- Frontend: foundation, auth, dashboard 3 role, các slice S01–S11, AI Chat S13.
+- Backend AI S12 (`/api/ai/*`: chat + conversations + delete, provider OpenAI-compatible,
+  `AiContextBuilder` theo role, thiếu key thì lỗi thân thiện 400).
+- P2 còn lại (optional): Audit Log, Settings (nav `comingSoon`).
 
 ## 4. Tech Stack
 
@@ -68,7 +72,9 @@ Registration (status PENDING/APPROVED/REJECTED/CANCELLED/PAID, `tuitionAtRegistr
 Transaction (status PENDING_CONFIRMATION/SUCCESS/FAILED, `BANK_TRANSFER` duy nhất),
 AttendanceSheet (unique `class_id+date`, `orphanRemoval` records) + AttendanceRecord
 (PRESENT/ABSENT/EXCUSED, không note), Score (`total = mid*0.4 + fin*0.6`),
-Notification + NotificationRecipient. Chưa entity: `chat_*`, `faqs`, `audit_logs`,
+Notification + NotificationRecipient. Đã entity: `chat_conversations`/`chat_messages`
+(`AiConversation`/`AiMessage`, S12 + migration `001_ai_chat.sql`).
+Chưa entity: `faqs`, `audit_logs`,
 `system_settings`, `teacher_profiles`, `token_blacklist`, `failed_login_attempts`,
 `password_reset_tokens`.
 
@@ -136,12 +142,12 @@ Notification + NotificationRecipient. Chưa entity: `chat_*`, `faqs`, `audit_log
 
 ## 15. Testing Rules
 
-- BE giữ 315/315 (MockMvc/H2). FE: Vitest run, mỗi slice có `__tests__/<page>.test.tsx` theo pattern
+- BE giữ 344/344 (MockMvc/H2, gồm test hồi quy D1 attendance-update). FE: Vitest run 395/395, mỗi slice có `__tests__/<page>.test.tsx` theo pattern
   fetch-mock + `AuthProvider` + `AppRoutes` + `authStorage` session; assertions `toBeTruthy/toBeNull`,
   **không dùng `toBeInTheDocument()`**; scope query vào row/dialog khi text trùng (option/topbar).
 - Verify mỗi slice: test mới + full suite + `lint` + `build` + `git diff --check` +
-  `git diff --name-only -- backend/ database/` (= rỗng).
-- Known fail duy nhất được chấp nhận: `dashboardCharts.test.tsx` (hard-coded data/time) — không sửa.
+  `git diff --name-only -- backend/ database/` (= rỗng, trừ file fix D1 đã duyệt).
+- `dashboardCharts.test.tsx` từng fail 1 assertion hard-coded — đã xử lý ở S15, S16 suite xanh 395/395.
 
 ## 16. Known Limitations / Discrepancies
 
@@ -151,6 +157,11 @@ Notification + NotificationRecipient. Chưa entity: `chat_*`, `faqs`, `audit_log
 - **Transaction:** reject không có reason field (T2); không có cancel-transaction (T3); `docs/api/README` ghi `/api/payments/*` không tồn tại (T4); UC-27 nhắc status "Đã hủy"/pagination không có (T5); gateway log/đối soát/QR-bank info không có backend (T6/T7).
 - **Attendance:** docs có "ngày quá xa" nhưng code chỉ chặn future (D1-S10); không tính % chuyên cần (D2); update sheet của class FINISHED vẫn cho phép (D5); duplicate sheet → 400 không 409 (D6).
 - **Frontend:** `dashboardCharts.test.tsx` fail 1 assertion (maintenance backlog).
+- **D1 (S17, đã fix + verify):** `PUT /api/attendance/sheets/{id}` từng 500 trên MySQL do
+  clear+insert cùng flush (vi phạm unique sheet+student); fix bằng `saveAndFlush` sau clear —
+  giữ nguyên file sửa, chưa commit.
+- **AI live (S16B, DEFERRED):** thiếu `AI_API_KEY` nên cuộc gọi LLM ngoài chưa kiểm chứng;
+  backend AI + UI + test tự động đã xong, thiếu key trả 400 thân thiện.
 
 ## 17. Out of Scope
 

@@ -3,6 +3,27 @@
 > Nguồn roadmap chính thức (cùng `PROJECT_CONTEXT.md`).
 > `docs/handoff/project-progress.md` là tài liệu **lịch sử** (dừng ở Step 18.3) — chỉ tham khảo, không phải source of truth.
 > Không commit/push khi chưa được lệnh.
+> Cập nhật S18: S12–S17 + D1 xong (chi tiết checkpoint mới bên dưới).
+
+## PHASE 7 — AI (S12 Backend + S13 Frontend) ✅
+
+- S12: `POST /api/ai/chat`, `GET/DELETE /api/ai/conversations*`, provider OpenAI-compatible
+  (`AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`), context theo role, thiếu key → 400 thân thiện.
+- S13: trang AI Chat 3 role (lịch sử + composer + xóa hội thoại), test Vitest xanh.
+- S16B live LLM: **DEFERRED** (chưa có `AI_API_KEY`) — không tính là lỗi product.
+
+## PHASE 8 — Release Readiness ✅ (trừ deploy)
+
+- S14: Spring Boot + MySQL thật boot/JPA validate PASS (seed idempotent).
+- S15: frontend regression cleanup (suite xanh).
+- S16: full regression — frontend 395/395, backend 343/343 (nay 344/344 sau D1), compile PASS.
+- S17: UAT tay 3 role + cross-role PASS (STUDENT đăng ký → ADMIN duyệt → giao dịch
+  report-paid/confirm → TEACHER điểm danh/chấm → STUDENT thấy điểm), AI Chat UI PASS.
+- D1: `PUT /api/attendance/sheets/{id}` 500 trên MySQL — **đã fix (`saveAndFlush`) + verify**
+  (AttendanceControllerTest 21/21, full BE 344/344, live MySQL update/re-read/restore PASS).
+- S18: README viết lại + `docs/demo/` (demo-flow, screenshots checklist) + cập nhật context/roadmap.
+
+## CURRENT CHECKPOINT: RELEASE READY (chờ deploy + screenshots thật) 📋
 
 ## PHASE 1 — Analysis & Database ✅
 
@@ -62,8 +83,9 @@
 4. Manual UAT TEACHER (classes → schedule → attendance → scores).
 5. Manual UAT STUDENT (courses → schedule → scores → registrations + payment flow).
 6. Verify production config (profile, `ddl-auto`, JWT secret, CORS, seed tách riêng).
-7. README update (mô tả thật, quick start, tài khoản demo `password123`).
-8. ERD / screenshots / demo documentation.
+7. README update (mô tả thật, quick start, tài khoản demo `password123`) ✅ (S18).
+8. ERD / screenshots / demo documentation — ERD đã khớp (20 entities gồm chat_*), demo docs ✅ (S18),
+   screenshots thật chờ chụp theo `docs/demo/screenshots.md`.
 9. Deployment (quyết định target theo người dùng).
 10. Intern Project Ready.
 

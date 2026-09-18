@@ -70,6 +70,10 @@ public class AttendanceServiceImpl implements AttendanceService {
         requireClassTeacherOrAdmin(sheet.getCourseClass(), currentUser);
         List<AttendanceRecord> records = buildRecords(request.getRecords(), sheet.getCourseClass().getId());
         sheet.getRecords().clear();
+        // Flush orphan DELETEs before INSERTing replacements: Hibernate executes
+        // inserts before orphan-removal deletes within a single flush, which
+        // violates uk_attendance_records_sheet_student on MySQL (D1).
+        attendanceSheetRepository.saveAndFlush(sheet);
         records.forEach(record -> record.setSheet(sheet));
         sheet.getRecords().addAll(records);
         return attendanceSheetRepository.save(sheet);

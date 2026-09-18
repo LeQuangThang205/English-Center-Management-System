@@ -386,8 +386,37 @@ class AttendanceControllerTest {
     }
 
     @Test
-    @DisplayName("TEACHER — PUT cập nhật phiếu lớp khác trả 403")
-    void teacherUpdateOtherClassSheetForbidden() throws Exception {
+    @DisplayName("TEACHER — PUT cập nhật phiếu đã có records: 200, statuses được thay thế, re-read khớp, không trùng (D1)")
+    void teacherUpdateSheetWithExistingRecords() throws Exception {
+        // Tạo phiếu đã có records (PRESENT/PRESENT) — tái hiện điều kiện S17 UAT.
+        String created = mockMvc.perform(post("/api/attendance/sheets")
+                        .header("Authorization", bearer(teacherA))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody(studyingClass.getId(), LocalDate.now().minusDays(5), studentA.getId(), studentB.getId())))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long sheetId = objectMapper.readTree(created).path("data").path("id").asLong();
+
+        // Cập nhật phiếu đã có records — đường lỗi D1 (clear + insert cùng flush).
+        mockMvc.perform(put("/api/attendance/sheets/{id}", sheetId)
+                        .header("Authorization", bearer(teacherA))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody(studentA.getId(), studentB.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(sheetId))
+                .andExpect(jsonPath("$.data.records.length()").value(2));
+
+        // Re-read: giá trị mới phải persist, không tạo records trùng.
+        mockMvc.perform(get("/api/attendance/sheets/{id}", sheetId)
+                        .header("Authorization", bearer(teacherA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records.length()").value(2))
+                .andExpect(jsonPath("$.data.records[?(@.studentId==" + studentA.getId() + " && @.status=='ABSENT')]").exists())
+                .andExpect(jsonPath("$.data.records[?(@.studentId==" + studentB.getId() + " && @.status=='ABSENT')]").exists());
+    }
+
+    @Test
+    @DisplayName("TEACHER — PUT cập nhật phiếu lớp khác trả 403")    void teacherUpdateOtherClassSheetForbidden() throws Exception {
         mockMvc.perform(put("/api/attendance/sheets/{id}", sheetB.getId())
                         .header("Authorization", bearer(teacherA))
                         .contentType(MediaType.APPLICATION_JSON)
