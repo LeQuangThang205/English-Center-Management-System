@@ -1,0 +1,230 @@
+.hero {
+  background-color: var(--color-neutral-0);
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-16);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-10);
+  align-items: center;
+}
+
+.copy {
+  max-width: 560px;
+}
+
+.title {
+  font-size: clamp(30px, 4.5vw, 52px);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: 1.15;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.titleBreak {
+  display: block;
+  color: var(--color-primary-700);
+}
+
+.slogan {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent-600);
+  margin-bottom: var(--space-4);
+}
+
+.description {
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.cta {
+  min-height: 48px;
+  padding: 0 var(--space-8);
+  font-size: var(--font-size-md);
+}
+
+.visual {
+  position: relative;
+  display: none;
+  min-height: 380px;
+}
+
+.mainCard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  background-color: var(--color-neutral-0);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-6);
+}
+
+.mainIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-primary-600);
+  color: var(--color-text-on-primary);
+  margin-bottom: var(--space-4);
+}
+
+.mainCardTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.mainCardText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bar {
+  display: block;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-200);
+}
+
+.bar:nth-child(2) {
+  background-color: var(--color-accent-100);
+}
+
+.bar:nth-child(3) {
+  background-color: var(--color-primary-100);
+}
+
+.floatCardTop,
+.floatCardBottom,
+.badgeCard {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: var(--color-neutral-0);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.floatCardTop {
+  top: 24px;
+  left: 8px;
+  animation: heroFloat 5s ease-in-out infinite;
+}
+
+.floatCardBottom {
+  bottom: 32px;
+  left: 32px;
+  animation: heroFloat 6.5s ease-in-out -1.2s infinite;
+}
+
+.badgeCard {
+  top: 64px;
+  right: 4px;
+  animation: heroFloat 5.8s ease-in-out -2.4s infinite;
+}
+
+@keyframes heroFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.floatIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
+  flex-shrink: 0;
+}
+
+.badgeCard .floatIcon {
+  background-color: var(--color-accent-50);
+  color: var(--color-accent-600);
+}
+
+.floatTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.floatText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: 1.05fr 0.95fr;
+  }
+
+  .visual {
+    display: block;
+  }
+}
+
+@media (max-width: 639px) {
+  .hero {
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-10);
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cta {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mainCard {
+    transform: translate(-50%, -50%);
+  }
+
+  .floatCardTop,
+  .floatCardBottom,
+  .badgeCard {
+    animation: none;
+  }
+}

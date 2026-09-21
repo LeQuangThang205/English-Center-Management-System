@@ -14,6 +14,13 @@ body,
   height: 100%;
 }
 
+/* Smooth anchor scrolling for the public landing page.
+   No custom wheel handling — native scroll physics are preserved.
+   The prefers-reduced-motion block below reverts this to auto. */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   font-family: var(--font-family-sans);

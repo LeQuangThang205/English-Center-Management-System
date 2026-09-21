@@ -1,0 +1,122 @@
+.footer {
+  background-color: var(--color-neutral-900);
+  color: var(--color-neutral-300);
+  padding-top: var(--space-12);
+  padding-bottom: var(--space-8);
+  scroll-margin-top: var(--layout-topbar-height);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-8);
+  margin-bottom: var(--space-8);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-neutral-0);
+  margin-bottom: var(--space-2);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary-600);
+  color: var(--color-text-on-primary);
+}
+
+.slogan {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-400);
+}
+
+.navList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.navLink {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-300);
+  transition: color var(--duration-normal) var(--ease-out);
+}
+
+.navLink:hover {
+  color: var(--color-neutral-0);
+}
+
+.ctaBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.ctaText {
+  font-size: var(--font-size-sm);
+  color: var(--color-neutral-400);
+}
+
+.loginLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-500);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-neutral-0);
+  transition:
+    background-color var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+}
+
+.loginLink:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-neutral-0);
+  transform: translateY(-1px);
+}
+
+.loginLink:active {
+  transform: translateY(0);
+}
+
+.copyright {
+  border-top: 1px solid var(--color-neutral-700);
+  padding-top: var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-neutral-500);
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: 1.2fr 1fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navLink,
+  .loginLink {
+    transition: none;
+  }
+
+  .loginLink:hover {
+    transform: none;
+  }
+}

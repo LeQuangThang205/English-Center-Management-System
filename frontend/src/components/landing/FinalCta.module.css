@@ -1,0 +1,103 @@
+.banner {
+  background-color: var(--color-neutral-900);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+}
+
+.title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-neutral-0);
+  margin-bottom: var(--space-3);
+}
+
+.subtitle {
+  font-size: var(--font-size-md);
+  color: var(--color-neutral-300);
+  margin-bottom: var(--space-8);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.ctaAccent {
+  background-color: var(--color-accent-600);
+  color: var(--color-text-on-accent);
+  min-height: 48px;
+  padding: 0 var(--space-8);
+  font-size: var(--font-size-md);
+  transition:
+    background-color var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.ctaAccent:hover {
+  background-color: var(--color-accent-700);
+  color: var(--color-text-on-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.ctaAccent:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.ctaOutline {
+  background-color: transparent;
+  border-color: var(--color-neutral-500);
+  color: var(--color-neutral-0);
+  min-height: 48px;
+  padding: 0 var(--space-8);
+  font-size: var(--font-size-md);
+  transition:
+    background-color var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.ctaOutline:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-neutral-0);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.ctaOutline:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+@media (max-width: 639px) {
+  .banner {
+    padding: var(--space-8) var(--space-5);
+  }
+
+  .title {
+    font-size: var(--font-size-xl);
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctaAccent,
+  .ctaOutline {
+    transition: none;
+  }
+
+  .ctaAccent:hover,
+  .ctaOutline:hover {
+    transform: none;
+  }
+}

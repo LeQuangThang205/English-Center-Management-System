@@ -3,6 +3,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { navConfig } from '@/routes/navigation';
 import { LoginPage } from '@/pages/LoginPage';
+import { LandingPage } from '@/pages/LandingPage';
 import { FoundationPreview } from '@/pages/FoundationPreview';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -156,6 +157,7 @@ function buildRoleRoutes(role: Role) {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/foundation-preview" element={<AppLayout role="ADMIN" preview />}>
         <Route index element={<FoundationPreview />} />

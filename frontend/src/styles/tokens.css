@@ -17,6 +17,13 @@
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
 
+  /* ---------- Accent (CTA / highlight trên public site) ---------- */
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+  --color-text-on-accent: #ffffff;
+
   /* ---------- Neutral (slate) ---------- */
   --color-neutral-0: #ffffff;
   --color-neutral-50: #f8fafc;
@@ -100,6 +107,7 @@
   --radius-md: 8px;
   --radius-lg: 10px;
   --radius-xl: 12px;
+  --radius-2xl: 16px;
   --radius-full: 999px;
 
   /* ---------- Shadows ---------- */
@@ -120,12 +128,14 @@
   --layout-sidebar-collapsed-width: 72px;
   --layout-topbar-height: 64px;
   --layout-content-max-width: 1440px;
+  --layout-public-max-width: 1200px;
   --layout-content-padding: 24px;
   --layout-gap: 24px;
 
   /* ---------- Motion ---------- */
   --duration-fast: 120ms;
   --duration-normal: 200ms;
+  --duration-slow: 500ms;
   --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ---------- Z-index ---------- */

@@ -8,11 +8,11 @@ lịch học, thông báo và trợ lý AI. Ba vai trò: **ADMIN / TEACHER / STU
 
 ## Tính năng chính
 
-| Vai trò | Chức năng |
-|---|---|
-| STUDENT | Dashboard, khóa học của tôi, lịch học tuần, bảng điểm, đăng ký/hủy khóa học, tạo giao dịch, báo đã chuyển khoản, thông báo, AI Chat |
-| TEACHER | Dashboard, lớp của tôi, lịch dạy, điểm danh (tạo/sửa phiếu lớp STUDYING mình dạy), quản lý điểm, thông báo, AI Chat |
-| ADMIN | Dashboard + biểu đồ, quản lý học viên/giáo viên/khóa học/lớp học, duyệt-từ chối-hủy-mark-paid đăng ký, confirm/reject giao dịch, xem điểm danh/điểm số, thông báo, AI Chat |
+| Vai trò | Chức năng                                                                                                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STUDENT | Dashboard, khóa học của tôi, lịch học tuần, bảng điểm, đăng ký/hủy khóa học, tạo giao dịch, báo đã chuyển khoản, thông báo, AI Chat                                        |
+| TEACHER | Dashboard, lớp của tôi, lịch dạy, điểm danh (tạo/sửa phiếu lớp STUDYING mình dạy), quản lý điểm, thông báo, AI Chat                                                        |
+| ADMIN   | Dashboard + biểu đồ, quản lý học viên/giáo viên/khóa học/lớp học, duyệt-từ chối-hủy-mark-paid đăng ký, confirm/reject giao dịch, xem điểm danh/điểm số, thông báo, AI Chat |
 
 ## Luồng nghiệp vụ chính
 
@@ -34,13 +34,13 @@ STUDENT đăng ký (PENDING)
 
 ## Công nghệ
 
-| Layer | Technology |
-|---|---|
-| Backend | Spring Boot 3.2.5, Java 17, Gradle 8.7, Spring Data JPA, Spring Security (JWT, không refresh token) |
-| Database | MySQL 8.0 (`ddl-auto: validate`) |
-| Frontend | React 18 + Vite 5 + TypeScript 5, react-router-dom 6, lucide-react |
-| Test BE | JUnit 5 + MockMvc + H2 — **344/344 PASS** |
-| Test FE | Vitest + Testing Library + jsdom — **395/395 PASS** |
+| Layer    | Technology                                                                                          |
+| -------- | --------------------------------------------------------------------------------------------------- |
+| Backend  | Spring Boot 3.2.5, Java 17, Gradle 8.7, Spring Data JPA, Spring Security (JWT, không refresh token) |
+| Database | MySQL 8.0 (`ddl-auto: validate`)                                                                    |
+| Frontend | React 18 + Vite 5 + TypeScript 5, react-router-dom 6, lucide-react                                  |
+| Test BE  | JUnit 5 + MockMvc + H2 — **344/344 PASS**                                                           |
+| Test FE  | Vitest + Testing Library + jsdom — **395/395 PASS**                                                 |
 
 ## Kiến trúc tổng quan
 
@@ -109,11 +109,11 @@ Biến môi trường frontend xem `frontend/.env.example` (`VITE_API_BASE_URL=/
 
 Key **chỉ ở backend** (prefix `app.ai` trong `application.yml`):
 
-| Biến | Mặc định | Mô tả |
-|---|---|---|
-| `AI_API_KEY` | _(rỗng)_ | Key provider OpenAI-compatible. Rỗng = AI trả lỗi thân thiện, không crash |
-| `AI_BASE_URL` | `https://api.openai.com/v1` | Base URL provider |
-| `AI_MODEL` | `gpt-4o-mini` | Tên model |
+| Biến          | Mặc định                    | Mô tả                                                                     |
+| ------------- | --------------------------- | ------------------------------------------------------------------------- |
+| `AI_API_KEY`  | _(rỗng)_                    | Key provider OpenAI-compatible. Rỗng = AI trả lỗi thân thiện, không crash |
+| `AI_BASE_URL` | `https://api.openai.com/v1` | Base URL provider                                                         |
+| `AI_MODEL`    | `gpt-4o-mini`               | Tên model                                                                 |
 
 ```bash
 # Windows PowerShell — chỉ dùng khi đã có key thật, không commit key
@@ -125,10 +125,10 @@ cd backend; .\gradlew.bat bootRun
 
 Mật khẩu chung: `password123`
 
-| Role | Email |
-|---|---|
-| ADMIN | `admin@example.com` |
-| TEACHER | `teacher1@example.com`, `teacher2@example.com` |
+| Role    | Email                                           |
+| ------- | ----------------------------------------------- |
+| ADMIN   | `admin@example.com`                             |
+| TEACHER | `teacher1@example.com`, `teacher2@example.com`  |
 | STUDENT | `student1@example.com` … `student5@example.com` |
 
 Seed gồm: 3 khóa học, 6 lớp (UPCOMING/STUDYING/FINISHED/CANCELLED), đăng ký PENDING mẫu
